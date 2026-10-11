@@ -13,11 +13,13 @@
     :root {
       --accent: #0a84ff; --accent-rgb: 10, 132, 255;
       --glass-opacity: 0.8;
+      --taskbar-bg-rgb: 22, 22, 26;
+      --titlebar-bg-rgb: 30, 30, 36;
       --bg-desktop: radial-gradient(circle at 50% 30%, #1e2640 0%, #0d111a 60%, #06080d 100%);
-      --bg-window: #1e1e24; --bg-titlebar: rgba(30, 30, 36, var(--glass-opacity)); --bg-content: #141418;
+      --bg-window: #1e1e24; --bg-titlebar: rgba(var(--titlebar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); --bg-content: #141418;
       --text-main: #f1f2f6; --text-muted: #8e909a;
       --border-subtle: rgba(255, 255, 255, 0.08); --border-titlebar: rgba(255, 255, 255, 0.08);
-      --taskbar-bg: rgba(22, 22, 26, var(--glass-opacity)); --taskbar-border: rgba(255, 255, 255, 0.08);
+      --taskbar-bg: rgba(var(--taskbar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); --taskbar-border: rgba(255, 255, 255, 0.08);
       --window-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
       --window-shadow-focused: 0 26px 56px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(var(--accent-rgb), 0.22);
       --term-bg: #111215; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
@@ -27,11 +29,13 @@
     }
 
     [data-theme="light"] {
+      --taskbar-bg-rgb: 255, 255, 255;
+      --titlebar-bg-rgb: 245, 245, 247;
       --bg-desktop: linear-gradient(135deg, #d8e2ec 0%, #b8c8d8 50%, #9cb0c5 100%);
-      --bg-window: #f5f5f7; --bg-titlebar: rgba(245, 245, 247, var(--glass-opacity)); --bg-content: #ffffff;
+      --bg-window: #f5f5f7; --bg-titlebar: rgba(var(--titlebar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); --bg-content: #ffffff;
       --text-main: #1d1d1f; --text-muted: #86868b;
       --border-subtle: rgba(0, 0, 0, 0.08); --border-titlebar: rgba(0, 0, 0, 0.06);
-      --taskbar-bg: rgba(255, 255, 255, var(--glass-opacity)); --taskbar-border: rgba(0, 0, 0, 0.08);
+      --taskbar-bg: rgba(var(--taskbar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); --taskbar-border: rgba(0, 0, 0, 0.08);
       --window-shadow: 0 18px 40px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
       --window-shadow-focused: 0 24px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(var(--accent-rgb), 0.28);
       --term-bg: #1c1d22; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
@@ -82,7 +86,7 @@
       .window.window-minimizing { opacity: 0; transform: none !important; transition: opacity 100ms ease !important; }
     }
 
-    .titlebar { height: 38px; background: var(--bg-titlebar); backdrop-filter: blur(calc(24px * var(--glass-opacity))) saturate(180%); border-bottom: 1px solid var(--border-titlebar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: grab; }
+    .titlebar { height: 38px; background: rgba(var(--titlebar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(calc(100% + 80% * var(--glass-opacity))); -webkit-backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(calc(100% + 80% * var(--glass-opacity))); border-bottom: 1px solid var(--border-titlebar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: grab; }
     .titlebar:active { cursor: grabbing; }
     .traffic-lights { display: flex; gap: 8px; align-items: center; width: 68px; }
     .traffic-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: none; outline: none; display: flex; align-items: center; justify-content: center; position: relative; }
@@ -194,7 +198,7 @@
     .about-meta { width: 100%; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; font-size: 11px; text-align: left; line-height: 1.8; color: var(--text-muted); font-family: var(--font-mono); }
 
     /* 9. Taskbar */
-    #taskbar { position: fixed; bottom: 0; left: 0; right: 0; height: 44px; background: var(--taskbar-bg); backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(180%); border-top: 1px solid var(--taskbar-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 9999; }
+    #taskbar { position: fixed; bottom: 0; left: 0; right: 0; height: 44px; background: rgba(var(--taskbar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity))); backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(calc(100% + 80% * var(--glass-opacity))); -webkit-backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(calc(100% + 80% * var(--glass-opacity))); border-top: 1px solid var(--taskbar-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 9999; }
     .taskbar-left { display: flex; align-items: center; gap: 6px; }
     .taskbar-btn { width: 36px; height: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer; transition: transform 140ms ease-out, background 140ms ease-out; position: relative; }
     .taskbar-btn:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.06); }
@@ -1885,16 +1889,55 @@
       const pid = Kernel.spawn('kernellog', 1, 14.0);
       const container = document.createElement('div');
       container.className = 'kernellog-container';
+      let winEl = null;
+
+      let lastSeenHistoryLength = 0;
+      let rafPending = false;
+
+      const appendNewEntries = () => {
+        if (!Kernel || !Kernel.scheduler || !Kernel.scheduler.history) return;
+        const history = Kernel.scheduler.history;
+        const total = history.length;
+        if (total === lastSeenHistoryLength) {
+          rafPending = false;
+          return;
+        }
+
+        let startIdx = lastSeenHistoryLength;
+        if (lastSeenHistoryLength === 0 || lastSeenHistoryLength > total) {
+          container.textContent = '';
+          startIdx = Math.max(0, total - 200);
+        }
+
+        const frag = document.createDocumentFragment();
+        for (let i = startIdx; i < total; i++) {
+          const lineDiv = document.createElement('div');
+          lineDiv.textContent = history[i];
+          frag.appendChild(lineDiv);
+        }
+        container.appendChild(frag);
+        lastSeenHistoryLength = total;
+
+        while (container.childElementCount > 200) {
+          container.removeChild(container.firstChild);
+        }
+        container.scrollTop = container.scrollHeight;
+        rafPending = false;
+      };
 
       const renderLog = () => {
-        container.textContent = Kernel.scheduler.history.join('\n') || 'Initializing scheduler history...';
-        container.scrollTop = container.scrollHeight;
+        if (document.visibilityState === 'hidden') return;
+        if (winEl && (winEl.style.display === 'none' || !winEl.isConnected)) return;
+        if (!rafPending) {
+          rafPending = true;
+          requestAnimationFrame(appendNewEntries);
+        }
       };
       renderLog();
 
-      const refreshIntervalId = setInterval(renderLog, 200);
+      const refreshIntervalId = setInterval(renderLog, 500);
 
-      WindowManager.createWindow({
+      winEl = WindowManager.createWindow({
         title: 'Kernel Log',
         pid,
         width: 500,
@@ -1916,9 +1959,25 @@
       const pid = Kernel.spawn('taskmgr', 1, 28.5);
       const container = document.createElement('div');
       container.className = 'taskmgr-container';
+      let winEl = null;
 
       const summaryDiv = document.createElement('div');
       summaryDiv.className = 'taskmgr-header-summary';
+      summaryDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+          <span><strong>Processes:</strong> <span class="tm-stat-procs">0</span> | <strong>Scheduler:</strong> RR (q=${Kernel.scheduler.quantumMs}ms) | <strong>Currently:</strong> <span class="tm-stat-curr">none</span> | <strong>Uptime:</strong> <span class="tm-stat-uptime">0.0</span>s</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; color:var(--text-muted);">
+          <span><strong>Filesystem:</strong> <span class="tm-stat-fs">0 dirs, 0 files</span></span>
+          <span><strong>Total CPU:</strong> <span class="tm-stat-cpu">0.0</span>% | <strong>Total Mem:</strong> <span class="tm-stat-mem">0.0</span> MB</span>
+        </div>
+      `;
+      const statProcs = summaryDiv.querySelector('.tm-stat-procs');
+      const statCurr = summaryDiv.querySelector('.tm-stat-curr');
+      const statUptime = summaryDiv.querySelector('.tm-stat-uptime');
+      const statFs = summaryDiv.querySelector('.tm-stat-fs');
+      const statCpu = summaryDiv.querySelector('.tm-stat-cpu');
+      const statMem = summaryDiv.querySelector('.tm-stat-mem');
 
       const table = document.createElement('table');
       table.className = 'taskmgr-table';
@@ -1932,45 +1991,97 @@
       container.appendChild(table);
 
       const tbody = table.querySelector('tbody');
-      const renderProcesses = () => {
+      const rowMap = new Map();
+      let rafPending = false;
+
+      const updateDom = () => {
         let totalCpu = 0, totalMem = 0;
-        tbody.innerHTML = Kernel.processes.map(p => {
-          totalCpu += p.cpu; totalMem += p.mem;
+        const currentPids = new Set();
+
+        Kernel.processes.forEach(p => {
+          totalCpu += p.cpu;
+          totalMem += p.mem;
+          currentPids.add(p.pid);
+
           const isRunning = p.state === 'running';
           const badgeClass = isRunning ? 'badge-running' : (p.state === 'blocked' ? 'badge-blocked' : 'badge-ready');
-          return `
-            <tr class="${isRunning ? 'is-running' : ''}">
+          let row = rowMap.get(p.pid);
+
+          if (!row) {
+            const tr = document.createElement('tr');
+            tr.className = isRunning ? 'is-running' : '';
+            tr.innerHTML = `
               <td>${p.pid}</td>
               <td style="font-weight:600; color:var(--text-main);">${p.name}</td>
-              <td style="color:var(--accent); font-weight:500;">${p.cpu.toFixed(1)}%</td>
-              <td style="color:var(--text-muted);">${p.mem.toFixed(1)} MB</td>
+              <td class="cell-cpu" style="color:var(--accent); font-weight:500;">${p.cpu.toFixed(1)}%</td>
+              <td class="cell-mem" style="color:var(--text-muted);">${p.mem.toFixed(1)} MB</td>
               <td><span class="${badgeClass}">${p.state.toUpperCase()}</span></td>
-              <td>${p.schedCount}</td>
+              <td class="cell-sched">${p.schedCount}</td>
               <td>${p.priority}</td>
-            </tr>
-          `;
-        }).join('');
+            `;
+            tbody.appendChild(tr);
+            row = {
+              tr,
+              cpuTd: tr.querySelector('.cell-cpu'),
+              memTd: tr.querySelector('.cell-mem'),
+              badgeSpan: tr.querySelector('span'),
+              schedTd: tr.querySelector('.cell-sched')
+            };
+            rowMap.set(p.pid, row);
+          } else {
+            if (row.tr.className !== (isRunning ? 'is-running' : '')) {
+              row.tr.className = isRunning ? 'is-running' : '';
+            }
+            const cpuStr = p.cpu.toFixed(1) + '%';
+            if (row.cpuTd.textContent !== cpuStr) row.cpuTd.textContent = cpuStr;
+
+            const memStr = p.mem.toFixed(1) + ' MB';
+            if (row.memTd.textContent !== memStr) row.memTd.textContent = memStr;
+
+            const stateStr = p.state.toUpperCase();
+            if (row.badgeSpan.textContent !== stateStr) row.badgeSpan.textContent = stateStr;
+            if (row.badgeSpan.className !== badgeClass) row.badgeSpan.className = badgeClass;
+
+            const schedStr = String(p.schedCount);
+            if (row.schedTd.textContent !== schedStr) row.schedTd.textContent = schedStr;
+          }
+        });
+
+        for (const [pid, row] of rowMap.entries()) {
+          if (!currentPids.has(pid)) {
+            if (row.tr.parentNode) row.tr.parentNode.removeChild(row.tr);
+            rowMap.delete(pid);
+          }
+        }
 
         const fsStats = Kernel.fs.count();
         const uptimeSec = ((Kernel.scheduler.totalTicks * Kernel.scheduler.quantumMs) / 1000).toFixed(1);
         const currProc = Kernel.processes.find(p => p.pid === Kernel.scheduler.currentPid);
         const currDesc = currProc ? `pid ${currProc.pid} (${currProc.name})` : 'none';
 
-        summaryDiv.innerHTML = `
-          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-            <span><strong>Processes:</strong> ${Kernel.processes.length} | <strong>Scheduler:</strong> RR (q=${Kernel.scheduler.quantumMs}ms) | <strong>Currently:</strong> ${currDesc} | <strong>Uptime:</strong> ${uptimeSec}s</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; color:var(--text-muted);">
-            <span><strong>Filesystem:</strong> ${fsStats.dirs} dirs, ${fsStats.files} file${fsStats.files === 1 ? '' : 's'}</span>
-            <span><strong>Total CPU:</strong> ${Math.min(100, totalCpu).toFixed(1)}% | <strong>Total Mem:</strong> ${totalMem.toFixed(1)} MB</span>
-          </div>
-        `;
+        if (statProcs) statProcs.textContent = Kernel.processes.length;
+        if (statCurr) statCurr.textContent = currDesc;
+        if (statUptime) statUptime.textContent = uptimeSec;
+        if (statFs) statFs.textContent = `${fsStats.dirs} dirs, ${fsStats.files} file${fsStats.files === 1 ? '' : 's'}`;
+        if (statCpu) statCpu.textContent = Math.min(100, totalCpu).toFixed(1);
+        if (statMem) statMem.textContent = totalMem.toFixed(1);
+
+        rafPending = false;
+      };
+
+      const renderProcesses = () => {
+        if (document.visibilityState === 'hidden') return;
+        if (winEl && (winEl.style.display === 'none' || !winEl.isConnected)) return;
+        if (!rafPending) {
+          rafPending = true;
+          requestAnimationFrame(updateDom);
+        }
       };
 
       renderProcesses();
-      const refreshIntervalId = setInterval(renderProcesses, 300);
+      const refreshIntervalId = setInterval(renderProcesses, 800);
 
-      WindowManager.createWindow({
+      winEl = WindowManager.createWindow({
         title: 'Task Manager',
         pid,
         width: 520,
@@ -2341,6 +2452,10 @@
 
     // App 5: File Manager Application (Files) with Matios UI Integration
     function launchFiles(initialPath = '/home/user') {
+      if (typeof initialPath !== 'string' || !initialPath) {
+        const shellProc = (typeof Kernel !== 'undefined' && Kernel.processes) ? Kernel.processes.find(p => p.name === 'shell') : null;
+        initialPath = (shellProc && shellProc.cwd) ? shellProc.cwd : '/home/user';
+      }
       const existing = WindowManager.windows.find(w => w.appKey === 'files');
       if (existing) {
         WindowManager.restore(existing.el);

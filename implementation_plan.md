@@ -1,161 +1,199 @@
-# Implementation Plan: WebOS v6.2 — Matios UI Integration, macOS 27 Liquid Glass & Shareable Themes
+# Implementation Plan: WebOS v6.2 Bug Fix Pass
 
-## 1. Overview & Architectural Goals
-
-WebOS v6.2 is a **"Library Integration & Polish"** milestone. It integrates **Matios UI**—a zero-build, dependency-free CSS/JS UI component framework—into the existing single-file WebOS architecture, introduces the **macOS 27 "Golden Gate" Liquid Glass transparency slider**, provides a **shareable theme file system** within the Virtual File System (VFS), and incorporates the complete **File Manager ("Files")** desktop application.
-
-All additions will be made **in place within `index.html`** while preserving every existing feature:
-- 100ms preemptive round-robin scheduler
-- In-memory VFS with `localStorage` persistence, per-process `cwd`, and safety flow for `rm -rf /`
-- Shell with pipes, redirections, and process execution
-- Window manager with authentic Apple cubic-bezier window motion
-- Zero-emoji design aesthetic using Lucide-style inline SVGs
+This plan addresses the three specific performance and visual bugs identified in WebOS v6.2 (`index.html`), establishes regression tests in `verify_v62.js`, and sets up side-by-side visual capture. Per strict instructions, no new features, architecture refactors, or unrelated changes will be introduced.
 
 ---
 
-## 2. Target Specifications & Technical Design
+## 1. Bug 1: Desktop Files Icon Crashes on Click
 
-### A. Matios UI Framework Integration (Zero-Build CDN)
-- **CDN Assets in `<head>`**:
-  ```html
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.css">
-  <link id="mts-accent-link" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/themes/matios-ui-accent-violet.css">
-  <script src="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.js"></script>
-  ```
-- **Global Availability**: `window.MTS` will be available after boot.
-- **Theme & Mode Synchronization**:
-  - Whenever WebOS switches light/dark mode, update `<html data-mts-mode="dark|light">` to keep all Matios components natively themed.
-  - Whenever WebOS accent color changes, map the 8 WebOS accents to Matios theme equivalents (e.g., `blue` &rarr; `matios-ui-accent-blue.css`, `purple` &rarr; `matios-ui-accent-violet.css`, `orange` &rarr; `matios-ui-accent-orange.css`, etc.) and set `<html data-mts-accent="...">`.
-- **Scope & Scoping Boundary**:
-  - Matios UI components will be utilized strictly for **application content controls** (Settings controls, File Manager toolbar, context menus, and confirmation dialogs).
-  - OS-level window chrome (traffic light buttons, title bars, window framing) remains custom to preserve authentic macOS Sequoia styling.
+### Problem & Root Cause
+- **Error**: `Uncaught TypeError: initialPath.split is not a function at HTMLDivElement.launchFiles (webos/:2840:73)`
+- **Mechanism**:
+  - In `index.html` (lines 2958–2959):
+    ```javascript
+    const d = document.getElementById('icon-' + app);
+    if (d) d.addEventListener('click', fn);
+    ```
+  - When clicking `#icon-files`, the event listener calls `launchFiles(event)` where `event` is a `MouseEvent` or `PointerEvent`.
+  - Inside `launchFiles` (line 2840):
+    ```javascript
+    const initialTitle = initialPath === '/' ? 'Files' : (initialPath.split('/').filter(Boolean).pop() || 'Files');
+    ```
+    `initialPath` is an object (`MouseEvent`), so calling `initialPath.split('/')` throws a `TypeError`.
+  - The taskbar button (`#taskbar-btn-files`) invokes `fn()` without arguments (line 2966), so `initialPath` defaults to `'/home/user'`, working only by accident.
 
-### B. macOS 27 "Golden Gate" Liquid Glass Transparency Slider
-- **CSS Variable**: `--glass-opacity` defined on `:root` (default `0.8`, valid range `0.0` to `1.0`).
-- **Dynamic Glass Styling**:
-  - Taskbar: `background: rgba(var(--taskbar-bg-rgb), var(--glass-opacity)); backdrop-filter: blur(calc(24px * var(--glass-opacity)));`
-  - Window Titlebars: `background: rgba(var(--titlebar-bg-rgb), var(--glass-opacity)); backdrop-filter: blur(calc(20px * var(--glass-opacity)));`
-  - Sidebar surfaces: dynamic frosted glass scaling with `--glass-opacity`.
-- **Settings App Integration**:
-  - Located under the **APPEARANCE** section as a dedicated row.
-  - Row Label: `"Liquid Glass"`.
-  - Icon Tile: Droplet icon on a vibrant blue tile (`#007aff`).
-  - Control: Matios-styled slider from `0.0` (ultra-clear glass) to `1.0` (fully opaque tinted glass), showing live decimal value readout (`0.80`).
-- **Persistence & CLI**:
-  - Persisted to `localStorage["webos.settings"]` under `glassOpacity`.
-  - Supported in shell: `theme set glassOpacity <0.0-1.0>`.
-  - Exported in `theme export` JSON object.
-
-### C. Shareable Theme File System
-- **File System Location**: `/home/user/Documents/webos-theme-<name>.json`.
-- **JSON Schema**:
-  ```json
-  {
-    "version": "6.2",
-    "name": "<name>",
-    "mode": "dark" | "light",
-    "accent": "blue" | "purple" | "pink" | "red" | "orange" | "yellow" | "green" | "graphite",
-    "wallpaper": 1 | 2 | 3 | 4 | 5 | 6,
-    "motion": "full" | "reduced",
-    "glassOpacity": 0.8,
-    "termFontSize": 13,
-    "termLineHeight": 1.5,
-    "termShowPath": true
+### Surgical Fix in `index.html`
+At the very top of `launchFiles` (around line 2343):
+```javascript
+function launchFiles(initialPath = '/home/user') {
+  if (typeof initialPath !== 'string' || !initialPath) {
+    initialPath = '/home/user';
   }
-  ```
-- **CLI Commands**:
-  - `theme save <name>`: Serializes current settings to `/home/user/Documents/webos-theme-<name>.json`.
-  - `theme load <path>`: Reads theme JSON from VFS path, parses/validates fields, applies settings dynamically, updates CSS variables and Matios mode/accent, persists to `localStorage`.
-  - `theme list`: Scans `/home/user/Documents/`, lists all files matching `webos-theme-*.json`, displaying name, accent, mode, and glass opacity.
+  // existing window restoration & creation logic continues...
+```
+This safely normalizes any non-string argument (DOM Event, `undefined`, `null`, empty string) to `'/home/user'` before calling `Kernel.spawn`, `Kernel.fs.normalize`, or string methods.
 
-### D. File Manager ("Files") App & VFS Modernization (v6.1 Foundation)
-- **VFS Extensions**:
-  - Add `mtime` tracking across touch, mkdir, write, rename, duplicate, remove.
-  - Implement graceful migration in `Kernel.fs.load()` for legacy trees without `mtime`.
-  - Ensure `/home/user/Desktop`, `/home/user/Documents`, `/home/user/Downloads` exist on boot.
-  - Implement `Kernel.fs.stat(path, cwd)`, `Kernel.fs.rename(path, newName, cwd)`, `Kernel.fs.duplicate(path, cwd)`, and recursive `Kernel.fs.remove(path, cwd, recursive)`.
-- **Files Application UI**:
-  - Process name: `files` (`Kernel.spawn('files', 2, 20.0, currentPath)`).
-  - Desktop icon (`#icon-files`) and taskbar button (`#taskbar-btn-files`) with active dot indicator.
-  - **Finder 38px Toolbar**:
-    - Left: Back/Forward navigation buttons and interactive breadcrumbs.
-    - Right: View mode toggle (Grid / List) using Matios button group (`.mts-btn-group`, `.mts-btn`).
-    - Right: New Folder button using Matios icon button (`.mts-btn`).
-    - Right: Search input using Matios input styling (`.mts-input`).
-  - **Translucent Sidebar (180px)**: FAVORITES (Home, Desktop, Documents, Downloads) and LOCATIONS (Root, Bin, Etc, Tmp).
-  - **Content Views**:
-    - Grid (Icon) View: 96×100px cells, 48px icons, soft selection highlight, inline rename.
-    - List View: 24px rows, columns: Name, Size (human-readable), Modified (`mtime`).
-  - **Context Menus**: Built with Matios Context Menu component / styling (`Open`, `New Folder`, `Rename`, `Duplicate`, `Copy path`, `Delete`).
-  - **Delete Confirmation Modal**: Built with Matios Modal component / styling for non-empty folders.
-  - **Toasts**: Non-intrusive notifications for copy path, file actions.
-- **Terminal Integration**:
-  - `files [path]`: Launches File Manager at specified path.
-  - `stat <path>`: Displays formatted node metadata.
-  - `rm -r / -rf <path>`: Recursive removal support.
-
-### E. Settings App Refactoring with Matios UI
-- Retain the macOS System Settings two-pane architecture (200px sidebar + scrollable content cards + 28×28px colored icon tiles).
-- Replace controls with Matios UI equivalents:
-  - Theme Mode: Matios segmented button group (`.mts-btn-group` containing `.mts-btn` items for Light / Dark / Auto).
-  - Sliders (Font Size, Line Height, Liquid Glass): Matios slider styling / component (`.mts-slider-wrap` with header, track, rail, fill, thumb).
-  - Toggles (Show Path): Matios toggle component (`.mts-toggle-wrap`, `.mts-toggle`).
-  - Motion Mode: Matios button group (`Full` / `Reduced`).
-  - Reset & Modals: Matios button (`.mts-btn--secondary`) triggering Matios confirmation modal.
+### Regression Test in `verify_v62.js`
+- Clean up any open Files window.
+- Attach an unhandled error listener / CDP exception inspector.
+- Trigger click on the desktop icon: `document.getElementById('icon-files').click()`.
+- Assert no errors were caught.
+- Assert the File Manager window opened (`WindowManager.windows.some(w => w.appKey === 'files' && w.el.style.display !== 'none')`).
 
 ---
 
-## 3. Line Budget & Implementation Strategy
+## 2. Bug 2: Liquid Glass Slider Has No Visual Effect
 
-- **Baseline v5.1**: 2,081 lines
-- **Ceiling Target**: < 3,100 lines
-- **Projected Additions**:
-  - CDN links & `<head>` configuration: ~10 lines
-  - Lucide SVG icons (Files app icons + Golden Gate droplet): ~25 lines
-  - CSS styling (Liquid Glass variables, Matios theme bindings, Files app layout): ~220 lines
-  - VFS enhancements (`mtime`, `stat`, `rename`, `duplicate`, recursive `remove`): ~85 lines
-  - Theme System extensions (`save`, `load`, `list`, `glassOpacity`): ~65 lines
-  - Settings App Matios controls refactoring: ~80 lines
-  - File Manager app implementation with Matios components: ~290 lines
-  - Shell commands (`files`, `stat`, `rm -r`, `help`): ~35 lines
-- **Estimated Total Lines**: ~2,890 lines (comfortably below the 3,100 line limit).
+### Problem & Root Cause
+- `--glass-opacity` is set on `:root` and updated on slider input / `theme set glassOpacity`, but the taskbar and titlebar CSS rules do not dynamically consume it for all visual properties:
+  - Taskbar `backdrop-filter` currently has hardcoded saturation: `saturate(180%)`.
+  - Titlebar `backdrop-filter` has hardcoded saturation `saturate(180%)` and hardcoded blur scaling `blur(calc(24px * var(--glass-opacity)))`.
+  - Background alpha in `:root` was defined as `rgba(22, 22, 26, var(--glass-opacity))` and `rgba(30, 30, 36, var(--glass-opacity))`, omitting the required base opacity formula `calc(0.35 + 0.55 * var(--glass-opacity))`. At 0.0, the taskbar background alpha dropped to 0, but backdrop saturation was still fixed at 180%.
+
+### Surgical Fix in `index.html`
+1. Define base RGB variables in `:root` and `[data-theme="light"]`:
+   - `:root` (dark mode):
+     ```css
+     --taskbar-bg-rgb: 22, 22, 26;
+     --titlebar-bg-rgb: 30, 30, 36;
+     ```
+   - `[data-theme="light"]` (light mode):
+     ```css
+     --taskbar-bg-rgb: 255, 255, 255;
+     --titlebar-bg-rgb: 245, 245, 247;
+     ```
+
+2. Wire the exact formulas specified into `.titlebar` and `#taskbar`:
+   ```css
+   .titlebar {
+     height: 38px;
+     background: rgba(var(--titlebar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity)));
+     backdrop-filter: blur(calc(30px * var(--glass-opacity)))
+                      saturate(calc(100% + 80% * var(--glass-opacity)));
+     -webkit-backdrop-filter: blur(calc(30px * var(--glass-opacity)))
+                              saturate(calc(100% + 80% * var(--glass-opacity)));
+     border-bottom: 1px solid var(--border-titlebar);
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 0 12px;
+     cursor: grab;
+   }
+
+   #taskbar {
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     right: 0;
+     height: 44px;
+     background: rgba(var(--taskbar-bg-rgb), calc(0.35 + 0.55 * var(--glass-opacity)));
+     backdrop-filter: blur(calc(30px * var(--glass-opacity)))
+                      saturate(calc(100% + 80% * var(--glass-opacity)));
+     -webkit-backdrop-filter: blur(calc(30px * var(--glass-opacity)))
+                              saturate(calc(100% + 80% * var(--glass-opacity)));
+     border-top: 1px solid var(--taskbar-border);
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     padding: 0 16px;
+     z-index: 9999;
+   }
+   ```
+
+3. Verification behavior:
+   - At `--glass-opacity: 0.0`:
+     - `backdrop-filter`: `blur(0px) saturate(1)` (no blur, 100% saturation)
+     - `background`: `rgba(..., 0.35)` (nearly clear, wallpaper and any content behind clearly visible)
+   - At `--glass-opacity: 1.0`:
+     - `backdrop-filter`: `blur(30px) saturate(1.8)` (strong blur, 180% saturation)
+     - `background`: `rgba(..., 0.90)` (nearly opaque frosted glass look)
+
+### Regression Test in `verify_v62.js`
+- Set `glassOpacity` to `0.0`. Read computed `backdrop-filter` (or `webkitBackdropFilter`) on `#taskbar`.
+- Set `glassOpacity` to `1.0`. Read computed `backdrop-filter` (or `webkitBackdropFilter`) on `#taskbar`.
+- Assert the computed values differ:
+  - At 0.0: computes to `blur(0px) saturate(1)`
+  - At 1.0: computes to `blur(30px) saturate(1.8)`
+- Also verify computed `backgroundColor` changes from `rgba(22, 22, 26, 0.35)` to `rgba(22, 22, 26, 0.9)`.
 
 ---
 
-## 4. Verification Plan
+## 3. Bug 3: OS Frame Rate Drops Under Window Load
 
-### Automated Test Suite (`verify_v62.js`)
-We will execute an automated, end-to-end verification script via Google Chrome CDP on port 9356:
+### Problem & Root Cause
+1. **Kernel Log (`launchKernelLog`)**:
+   - `setInterval(renderLog, 200)` sets `container.textContent = Kernel.scheduler.history.join('\n')` on up to 200 strings every 200ms, immediately followed by `container.scrollTop = container.scrollHeight`.
+   - Joining 200 strings and assigning `textContent` causes full text node destruction and layout recalculation 5 times per second.
+   - It runs unconditionally even if the window is minimized (`display: none`) or obscured.
+2. **Task Manager (`launchTaskManager`)**:
+   - `setInterval(renderProcesses, 300)` runs 3.3 times per second.
+   - Every tick executes `tbody.innerHTML = Kernel.processes.map(...).join('')` and `summaryDiv.innerHTML = ...`.
+   - Full HTML serialization, DOM subtree deletion, and HTML parsing runs every 300ms, causing extreme GC churn and layout thrashing.
+   - Runs unconditionally even if the window is minimized (`display: none`).
+3. **Headless Chrome VSync Cap**:
+   - Headless Chrome (`--headless=new`) caps `requestAnimationFrame` at 30 FPS unless `--disable-frame-rate-limit` is supplied. When coupled with layout thrashing from Kernel Log and Task Manager, FPS drops into single digits (~4.8 FPS).
 
-1. **System & Boot Integrity**:
-   - Zero-emoji audit across entire rendered DOM.
-   - 100ms scheduler quantum check and kernel boot process verification.
-   - Verify `window.MTS` exists and Matios UI CSS/JS loaded successfully.
-2. **Liquid Glass Transparency**:
-   - Verify `--glass-opacity` CSS property on `:root` defaults to `0.8`.
-   - Adjust slider and confirm live update of `--glass-opacity` and visual taskbar opacity.
-   - Verify persistence in `localStorage["webos.settings"]` across page reload.
-   - Test shell command: `theme set glassOpacity 0.5`.
-   - Test `theme export` includes `"glassOpacity": 0.5`.
-3. **Shareable Theme Files**:
-   - Execute `theme save mytheme` &rarr; verify `/home/user/Documents/webos-theme-mytheme.json` created in VFS.
-   - Execute `theme list` &rarr; verify output lists `webos-theme-mytheme.json` with correct metadata.
-   - Execute `theme load /home/user/Documents/webos-theme-mytheme.json` &rarr; verify theme reloaded cleanly.
-4. **Settings App Matios Controls**:
-   - Verify Matios segmented button group (`.mts-btn-group`), slider (`.mts-slider-wrap`), and toggle (`.mts-toggle-wrap`).
-   - Switch mode Light &harr; Dark &rarr; verify `data-mts-mode` attribute updates on `<html>`.
-5. **File Manager App**:
-   - Launch `files` via desktop icon, taskbar button, and shell command `files /home/user`.
-   - Test navigation: back/forward buttons, breadcrumb segments, sidebar favorites/locations.
-   - Test view toggle between Grid (Icon) view and List view.
-   - Test New Folder creation and inline rename on Enter/Esc/blur.
-   - Test Duplicate operation and clipboard copy path with toast.
-   - Test Delete with Matios confirmation dialog for non-empty directories.
-6. **Shell Pipeline & Backward Compatibility**:
-   - Pipeline test: `cat /README.txt | grep WebOS`.
-   - VFS test: `stat /README.txt`.
-   - All v6.1 and v5.1 regression tests passing with exit code 0.
+### Surgical Fix in `index.html`
+1. **Kernel Log Optimization**:
+   - Do NOT wipe and reconstruct `container.textContent` every tick.
+   - On launch, initialize the container with child lines.
+   - Keep track of `lastSeenTick = 0`.
+   - On each interval (increased from 200ms to 500ms):
+     - If the window is minimized (`winEl.style.display === 'none'`) or `document.hidden`, skip updates.
+     - Detect only new entries in `Kernel.scheduler.history` since `lastSeenTick`.
+     - Use `requestAnimationFrame` to batch DOM updates:
+       - Append only the new line elements (`document.createElement('div')`).
+       - Cap the DOM at a rolling max of 200 nodes by removing `container.firstChild` in a while loop (`while (container.childElementCount > 200) container.removeChild(container.firstChild)`).
+       - Smoothly update `container.scrollTop = container.scrollHeight`.
 
-### Visual & Documentation Artifacts
-1. High-resolution screenshot showing Settings app open with the **Liquid Glass** slider visible alongside the Terminal running `theme list`.
-2. Detailed completion report saved to `webos_verification_report.md`.
+2. **Task Manager Optimization**:
+   - Keep the DOM stable.
+   - In `taskmgr-table`, keep rows persistent, keyed by PID (`<tr data-pid="${p.pid}">`).
+   - On each update tick (interval increased from 300ms to 800ms):
+     - If the window is minimized (`winEl.style.display === 'none'`) or `document.hidden`, skip updates.
+     - Use `requestAnimationFrame` to apply updates:
+       - For existing processes: update cell text in place (`cellCpu.textContent = p.cpu.toFixed(1) + '%'`, `cellMem.textContent = p.mem.toFixed(1) + ' MB'`, badge class, sched count).
+       - For newly spawned processes: create and append a new `<tr>`.
+       - For terminated processes: remove the stale `<tr>`.
+     - In `summaryDiv`: structure with static labeled spans (`#tm-procs-count`, `#tm-sched-q`, `#tm-curr-proc`, `#tm-uptime`, `#tm-fs-stats`, `#tm-total-cpu`, `#tm-total-mem`) and update their `textContent` directly without replacing `summaryDiv.innerHTML`.
+
+3. **Window Inactivity Throttling**:
+   - If either window is closed, clear its timer via `onClose`.
+   - If minimized (`winEl.style.display === 'none'`), bypass DOM manipulation completely until restored.
+
+4. **Performance Target**:
+   - Idle FPS (no windows open): >= 55 FPS.
+   - Loaded FPS (Kernel Log + Task Manager + File Manager all open): >= 30 FPS.
+
+### Regression Test in `verify_v62.js`
+- Launch all three applications: `launchKernelLog()`, `launchTaskManager()`, `launchFiles('/home/user')`.
+- Wait 3 seconds for initial render and history buffer to fill.
+- Sample `requestAnimationFrame` timestamps over a 2-second measurement window.
+- Compute average FPS: `totalFrames / (elapsedSeconds)`.
+- Assert `averageFps >= 30`.
+
+---
+
+## 4. Extended Test Plan & Deliverables
+
+1. **`verify_v62.js` Test Additions**:
+   - Add Assertion 12: Desktop Files icon click handling (no crash, window opens).
+   - Add Assertion 13: Liquid Glass dynamic CSS variables consumption (0.0 vs 1.0 computed values comparison).
+   - Add Assertion 14: Loaded 3-app FPS benchmark sampling (>= 30 FPS assertion).
+   - Ensure all existing assertions 1–11 continue to pass at 100%.
+
+2. **Before / After Performance Recording**:
+   - Record and report Idle FPS and 3-App Loaded FPS.
+
+3. **Visual Verification Screenshot**:
+   - Generate `webos_glass_comparison.png` displaying Liquid Glass slider at `0.0` vs `1.0` side-by-side with wallpaper and taskbar clearly contrasting transparency levels.
+
+---
+
+## 5. Verification Schedule & Approval Gate
+
+- [x] Step 1: Write and present this detailed `implementation_plan.md` and updated `task.md`.
+- [x] Step 2: Apply surgical fixes for Bugs 1, 2, and 3 to `index.html`.
+- [x] Step 3: Extend `verify_v62.js` with the 3 regression test assertions.
+- [x] Step 4: Run the full test suite and confirm 100% pass rate.
+- [x] Step 5: Capture side-by-side screenshot artifact and report FPS numbers.

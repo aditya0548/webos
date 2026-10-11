@@ -49,3 +49,11 @@
   - [x] Verify scheduler 100ms quantum and shell piping regressions <!-- id: 746 -->
   - [x] Capture showcase screenshots (Settings Liquid Glass slider + Terminal `theme list`) <!-- id: 747 -->
   - [x] Generate `webos_verification_report.md` artifact <!-- id: 748 -->
+- [x] 8. Bug Fix Pass (Desktop Files Icon, Liquid Glass Dynamic CSS, Frame Rate Optimization) <!-- id: 800 -->
+  - [x] 8.1 Write bug fix implementation plan (`implementation_plan.md`) and await approval <!-- id: 801 -->
+  - [x] 8.2 Fix Bug 1: Normalize `launchFiles` argument to prevent desktop icon click crash <!-- id: 802 -->
+  - [x] 8.3 Fix Bug 2: Wire `--glass-opacity` into taskbar & titlebar backdrop-filter & background RGBA <!-- id: 803 -->
+  - [x] 8.4 Fix Bug 3: Optimize Kernel Log & Task Manager DOM updates, pause inactive windows, target >= 30 FPS under load <!-- id: 804 -->
+  - [x] 8.5 Extend `verify_v62.js` with 3 new regression tests (Desktop icon click, Liquid glass CSS delta, 30+ FPS benchmark) <!-- id: 805 -->
+  - [x] 8.6 Run full verification test suite (all 14 assertions pass) and report FPS before/after <!-- id: 806 -->
+  - [x] 8.7 Capture side-by-side screenshot artifact of Liquid Glass slider at 0.0 vs 1.0 <!-- id: 807 -->
