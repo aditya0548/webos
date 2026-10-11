@@ -1,0 +1,36 @@
+# Tasks: WebOS v5.1 - macOS System Settings Rebuild & Apple Window Motion
+
+- [x] 0. Architecture & Implementation Planning <!-- id: 550 -->
+  - [x] Write detailed implementation plan artifact (`implementation_plan.md`) <!-- id: 551 -->
+  - [x] Present plan to user and await explicit approval <!-- id: 552 -->
+- [x] 1. macOS System Settings App Rebuild <!-- id: 553 -->
+  - [x] Add missing Lucide SVG icons (`image`, `droplet`, `type`, `alignLeft`) <!-- id: 554 -->
+  - [x] Build two-pane layout: 200px sidebar + scrollable content pane <!-- id: 555 -->
+  - [x] Implement decorative search field in sidebar with magnifier icon <!-- id: 556 -->
+  - [x] Build 3 grouped sidebar sections (Appearance, Terminal, System) with 7 total rows <!-- id: 557 -->
+  - [x] Build dynamic Header Card (48px accent icon, 20px title, 12px subtitle) <!-- id: 558 -->
+  - [x] Build Content Cards with 28x28 colored icon tiles (Appearance, Terminal, System) <!-- id: 559 -->
+  - [x] Integrate controls: Segmented controls, 8 accent swatches, 6 wallpaper tiles, sliders with live labels, toggles <!-- id: 560 -->
+  - [x] Implement centered Reset Confirmation Modal (320px, 8px blur backdrop, Cancel / Reset) <!-- id: 561 -->
+  - [x] Add `termLineHeight` setting to `Settings` object and persist to `localStorage["webos.settings"]` <!-- id: 562 -->
+- [x] 2. Apple-Spec Window Motion Tuning <!-- id: 563 -->
+  - [x] Configure Apple timing curves: `cubic-bezier(0.32, 0.72, 0, 1)` for open/min/max and `cubic-bezier(0.4, 0, 1, 1)` for close <!-- id: 564 -->
+  - [x] Window open: 220ms, `scale(0.96) -> scale(1)`, `opacity 0 -> 1` <!-- id: 565 -->
+  - [x] Window close: 180ms, reverse <!-- id: 566 -->
+  - [x] Window minimize: 260ms, `scale(1) -> scale(0.15)` + translate toward taskbar <!-- id: 567 -->
+  - [x] Window restore from minimize: 240ms reverse <!-- id: 568 -->
+  - [x] Window maximize: 280ms left/top/width/height transition <!-- id: 569 -->
+  - [x] Window restore from maximize: 260ms reverse <!-- id: 570 -->
+  - [x] Focus transition: 200ms box-shadow, border-color, titlebar text opacity <!-- id: 571 -->
+  - [x] Drag override: `transition: none !important` for 1:1 cursor response <!-- id: 572 -->
+  - [x] Reduced motion support: `@media (prefers-reduced-motion)` and `[data-motion="reduced"]` opacity-only 100ms fade <!-- id: 573 -->
+- [x] 3. Taskbar Polish <!-- id: 574 -->
+  - [x] Button hover scale: `scale(1.0) -> scale(1.06)` over 140ms `ease-out` <!-- id: 575 -->
+  - [x] Active indicator dot: 160ms fade-in with 2px upward translate <!-- id: 576 -->
+- [x] 4. Verification, Testing & Deliverables <!-- id: 577 -->
+  - [x] Verify line budget constraint (under ~2,100 lines total in `index.html` — 2,081 lines) <!-- id: 578 -->
+  - [x] Extend test suite to `verify_v51.js` with comprehensive assertions <!-- id: 579 -->
+  - [x] Execute `verify_v51.js` in headless Chrome and confirm 0 exit code <!-- id: 580 -->
+  - [x] Conduct automated Zero-Emoji audit <!-- id: 581 -->
+  - [x] Capture composite screenshots (Dark Mode + Light Mode + Settings App + Terminal + Task Manager) <!-- id: 582 -->
+  - [x] Generate comprehensive `webos_verification_report.md` artifact <!-- id: 583 -->

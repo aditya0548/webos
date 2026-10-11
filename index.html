@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-motion="full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebOS v5</title>
+  <style>
+    /* CSS Variables & Design Tokens (macOS Sequoia) */
+    :root {
+      --accent: #0a84ff; --accent-rgb: 10, 132, 255;
+      --bg-desktop: radial-gradient(circle at 50% 30%, #1e2640 0%, #0d111a 60%, #06080d 100%);
+      --bg-window: #1e1e24; --bg-titlebar: rgba(30, 30, 36, 0.72); --bg-content: #141418;
+      --text-main: #f1f2f6; --text-muted: #8e909a;
+      --border-subtle: rgba(255, 255, 255, 0.08); --border-titlebar: rgba(255, 255, 255, 0.08);
+      --taskbar-bg: rgba(22, 22, 26, 0.72); --taskbar-border: rgba(255, 255, 255, 0.08);
+      --window-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
+      --window-shadow-focused: 0 26px 56px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(var(--accent-rgb), 0.22);
+      --term-bg: #111215; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
+      --term-font-size: 13px;
+      --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, "Cascadia Code", monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-desktop: linear-gradient(135deg, #d8e2ec 0%, #b8c8d8 50%, #9cb0c5 100%);
+      --bg-window: #f5f5f7; --bg-titlebar: rgba(245, 245, 247, 0.78); --bg-content: #ffffff;
+      --text-main: #1d1d1f; --text-muted: #86868b;
+      --border-subtle: rgba(0, 0, 0, 0.08); --border-titlebar: rgba(0, 0, 0, 0.06);
+      --taskbar-bg: rgba(255, 255, 255, 0.72); --taskbar-border: rgba(0, 0, 0, 0.08);
+      --window-shadow: 0 18px 40px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+      --window-shadow-focused: 0 24px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(var(--accent-rgb), 0.28);
+      --term-bg: #1c1d22; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
+    }
+
+    /* Reset & Base System Styles */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--font-ui); background: #000; color: var(--text-main); }
+    ::selection { background: rgba(var(--accent-rgb), 0.25); }
+
+    /* 1. Boot Sequence Screen */
+    #boot-screen { position: fixed; inset: 0; background: #050505; color: #22c55e; font-family: var(--font-mono); font-size: 14px; line-height: 1.6; padding: 24px; z-index: 99999; display: flex; flex-direction: column; transition: opacity 0.4s ease-out; }
+    #boot-screen.fade-out { opacity: 0; pointer-events: none; }
+    .boot-line { white-space: pre; animation: fadeInLine 0.05s ease; }
+    .boot-cursor { display: inline-block; width: 8px; height: 15px; background: #22c55e; margin-left: 4px; animation: blink 0.8s infinite; vertical-align: middle; }
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    @keyframes fadeInLine { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* 2. Desktop & macOS Icon Grid */
+    #desktop { position: fixed; inset: 0; bottom: 44px; background: var(--bg-desktop); overflow: hidden; opacity: 0; transition: opacity 0.5s ease; }
+    #desktop.loaded { opacity: 1; }
+    #desktop-icons { position: absolute; top: 24px; left: 24px; display: grid; grid-template-columns: repeat(1, 88px); grid-auto-rows: 92px; gap: 16px; z-index: 10; }
+    .desktop-icon { width: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; border-radius: 8px; cursor: pointer; color: var(--text-main); text-align: center; transition: background 150ms ease, transform 150ms ease; }
+    .desktop-icon:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
+    .desktop-icon:active { background: rgba(255, 255, 255, 0.16); transform: scale(0.97); }
+    .icon-symbol { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); border: 1px solid var(--border-subtle); background: rgba(255, 255, 255, 0.06); color: var(--accent); }
+    .icon-title { font-size: 11px; font-weight: 600; letter-spacing: -0.005em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+
+    /* 3. Window Manager Chrome */
+    #windows-container { position: absolute; inset: 0; pointer-events: none; }
+    .window { position: absolute; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 10px; box-shadow: var(--window-shadow); display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; min-width: 280px; min-height: 180px; transition: box-shadow 200ms ease, border-color 200ms ease, opacity 220ms cubic-bezier(0.32, 0.72, 0, 1), transform 220ms cubic-bezier(0.32, 0.72, 0, 1), left 280ms cubic-bezier(0.32, 0.72, 0, 1), top 280ms cubic-bezier(0.32, 0.72, 0, 1), width 280ms cubic-bezier(0.32, 0.72, 0, 1), height 280ms cubic-bezier(0.32, 0.72, 0, 1); }
+    .window.focused { border-color: rgba(var(--accent-rgb), 0.25); box-shadow: var(--window-shadow-focused); }
+    .window:not(.focused) { border-color: transparent; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14); }
+    .window.maximized { border-radius: 0 !important; border: none !important; }
+    .window.is-dragging { transition: none !important; }
+
+    /* Window animations */
+    .window.window-opening { transform: scale(0.96); opacity: 0; }
+    .window.window-closing { transform: scale(0.96); opacity: 0; pointer-events: none; transition: opacity 180ms cubic-bezier(0.4, 0, 1, 1), transform 180ms cubic-bezier(0.4, 0, 1, 1) !important; }
+    .window.window-minimizing { transform: scale(0.15) translateY(320px); opacity: 0; pointer-events: none; transition: opacity 260ms cubic-bezier(0.32, 0.72, 0, 1), transform 260ms cubic-bezier(0.32, 0.72, 0, 1) !important; }
+
+    /* Reduced Motion */
+    [data-motion="reduced"] .window,
+    @media (prefers-reduced-motion: reduce) {
+      .window { transition: opacity 100ms ease !important; transform: none !important; }
+      .window.window-opening { opacity: 0; transform: none !important; }
+      .window.window-closing { opacity: 0; transform: none !important; transition: opacity 100ms ease !important; }
+      .window.window-minimizing { opacity: 0; transform: none !important; transition: opacity 100ms ease !important; }
+    }
+
+    .titlebar { height: 38px; background: var(--bg-titlebar); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border-titlebar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: grab; }
+    .titlebar:active { cursor: grabbing; }
+    .traffic-lights { display: flex; gap: 8px; align-items: center; width: 68px; }
+    .traffic-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: none; outline: none; display: flex; align-items: center; justify-content: center; position: relative; }
+    .traffic-glyph { opacity: 0; font-size: 9px; font-weight: 700; color: rgba(0, 0, 0, 0.65); transition: opacity 120ms ease; line-height: 1; }
+    .traffic-lights:hover .traffic-glyph { opacity: 1; }
+    .btn-close { background: #ff5f56; }
+    .btn-minimize { background: #ffbd2e; }
+    .btn-maximize { background: #27c93f; }
+    .window-title { font-size: 13px; font-weight: 600; color: var(--text-main); text-align: center; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; transition: opacity 200ms ease; }
+    .window:not(.focused) .window-title { opacity: 0.55; }
+    .titlebar-spacer { width: 68px; }
+    .window-content { flex: 1; overflow: auto; background: var(--bg-content); color: var(--text-main); user-select: text; border-radius: 0 0 9px 9px; position: relative; }
+
+    /* 4. Terminal Styles */
+    .terminal-container { height: 100%; display: flex; flex-direction: column; background: var(--term-bg); color: var(--term-fg); font-family: var(--font-mono); font-size: var(--term-font-size); line-height: var(--term-line-height, 1.5); padding: 12px 16px; overflow-y: auto; }
+    .term-history { display: flex; flex-direction: column; gap: 4px; }
+    .term-line { white-space: pre-wrap; word-break: break-all; }
+    .term-prompt-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .term-prompt-symbol { color: var(--term-prompt); font-weight: 600; white-space: nowrap; }
+    .term-prompt-path { color: var(--accent); font-weight: 600; }
+    .term-input { flex: 1; background: transparent; border: none; outline: none; color: var(--term-fg); font-family: inherit; font-size: inherit; caret-color: var(--accent); }
+    .term-output { color: var(--text-muted); white-space: pre-wrap; margin: 2px 0 6px 0; word-break: break-all; }
+    .term-output.error-msg { color: var(--term-error); }
+
+    /* 5. Kernel Log Styles */
+    .kernellog-container { height: 100%; background: var(--term-bg); color: var(--term-fg); font-family: var(--font-mono); font-size: 12px; padding: 12px 16px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; }
+
+    /* 6. Task Manager Styles */
+    .taskmgr-container { padding: 14px; font-size: 12px; height: 100%; overflow-y: auto; background: var(--bg-content); }
+    .taskmgr-header-summary { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; padding: 10px 14px; background: var(--bg-window); border-radius: 8px; border: 1px solid var(--border-subtle); font-size: 12px; }
+    .taskmgr-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .taskmgr-table th { padding: 8px 10px; background: var(--bg-window); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-subtle); }
+    .taskmgr-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 12px; }
+    .taskmgr-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .taskmgr-table tr.is-running td { background: rgba(var(--accent-rgb), 0.12); }
+    .badge-running { display: inline-block; padding: 2px 6px; border-radius: 4px; background: rgba(var(--accent-rgb), 0.22); color: var(--accent); font-size: 10px; text-transform: uppercase; font-weight: 600; border: 1px solid rgba(var(--accent-rgb), 0.4); }
+    .badge-ready { display: inline-block; padding: 2px 6px; border-radius: 4px; background: rgba(148,163,184,0.12); color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: 500; }
+    .badge-blocked { display: inline-block; padding: 2px 6px; border-radius: 4px; background: rgba(245,158,11,0.15); color: #fbbf24; font-size: 10px; text-transform: uppercase; font-weight: 500; }
+
+    /* 7. Settings App Styles (macOS Sequoia System Settings) */
+    .settings-container { display: flex; height: 100%; background: var(--bg-content); position: relative; overflow: hidden; }
+    .settings-sidebar { width: 200px; min-width: 200px; background: var(--bg-window); border-right: 1px solid rgba(128,128,128,0.12); padding: 12px 10px; display: flex; flex-direction: column; overflow-y: auto; user-select: none; }
+    .settings-search-wrap { position: relative; margin-bottom: 6px; }
+    .settings-search-icon { position: absolute; left: 8px; top: 7px; color: var(--text-muted); pointer-events: none; }
+    .settings-search-input { width: 100%; height: 28px; border-radius: 6px; background: rgba(128,128,128,0.08); border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; padding: 0 8px 0 26px; pointer-events: none; outline: none; box-sizing: border-box; }
+    .settings-group-header { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding-left: 6px; margin-top: 14px; margin-bottom: 4px; }
+    .settings-group-header:first-of-type { margin-top: 4px; }
+    .settings-nav-row { height: 28px; border-radius: 6px; padding: 0 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 500; cursor: pointer; color: var(--text-main); transition: background 120ms ease-out; box-sizing: border-box; }
+    .settings-nav-row:hover { background: rgba(255,255,255,0.04); }
+    [data-theme="light"] .settings-nav-row:hover { background: rgba(0,0,0,0.03); }
+    .settings-nav-row.active { background: rgba(255,255,255,0.08); }
+    [data-theme="light"] .settings-nav-row.active { background: rgba(0,0,0,0.06); }
+    .settings-nav-icon { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+    .settings-nav-row.active .settings-nav-icon { color: var(--accent); }
+    .settings-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .settings-header-card { border-radius: 10px; padding: 20px; background: rgba(255,255,255,0.03); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+    [data-theme="light"] .settings-header-card { background: rgba(0,0,0,0.02); }
+    .settings-header-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
+    .settings-header-title { font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0; letter-spacing: -0.01em; }
+    .settings-header-subtitle { font-size: 12px; color: var(--text-muted); max-width: 340px; line-height: 1.4; margin: 0; }
+    .settings-card-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .settings-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding-left: 4px; }
+    .settings-card { border-radius: 10px; background: rgba(255,255,255,0.03); overflow: hidden; display: flex; flex-direction: column; }
+    [data-theme="light"] .settings-card { background: rgba(0,0,0,0.02); }
+    .settings-row { min-height: 44px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(128,128,128,0.06); box-sizing: border-box; }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .settings-tile { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+    .settings-row-text { display: flex; flex-direction: column; min-width: 0; }
+    .settings-row-title { font-size: 13px; font-weight: 500; color: var(--text-main); white-space: nowrap; }
+    .settings-row-desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+    .settings-row-right { display: flex; align-items: center; justify-content: flex-end; flex-shrink: 0; }
+    .segmented-control { display: inline-flex; background: rgba(128,128,128,0.14); border-radius: 6px; padding: 2px; gap: 2px; }
+    .segmented-btn { padding: 4px 10px; border-radius: 4px; border: none; background: transparent; color: var(--text-main); font-size: 12px; font-weight: 500; cursor: pointer; transition: background 120ms, color 120ms; }
+    .segmented-btn.active { background: var(--accent); color: #fff; }
+    .accent-swatches { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .accent-swatch { width: 20px; height: 20px; border-radius: 50%; border: none; cursor: pointer; transition: transform 120ms; position: relative; outline: none; padding: 0; }
+    .accent-swatch:hover { transform: scale(1.15); }
+    .accent-swatch.active { box-shadow: 0 0 0 2px var(--bg-window), 0 0 0 4px var(--text-main); }
+    .wallpaper-grid { display: grid; grid-template-columns: repeat(3, 48px); gap: 8px; }
+    .wallpaper-tile { width: 48px; height: 28px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: transform 120ms, border-color 120ms; }
+    .wallpaper-tile:hover { transform: scale(1.05); }
+    .wallpaper-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--bg-window); }
+    .toggle-switch { position: relative; display: inline-block; width: 38px; height: 22px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track { position: absolute; cursor: pointer; inset: 0; background-color: rgba(128,128,128,0.3); transition: 150ms ease; border-radius: 22px; }
+    .toggle-track:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: 150ms ease; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+    .toggle-switch input:checked + .toggle-track { background-color: var(--accent); }
+    .toggle-switch input:checked + .toggle-track:before { transform: translateX(16px); }
+    .settings-slider-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; }
+    .settings-slider { width: 90px; accent-color: var(--accent); cursor: pointer; }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 150ms ease; border-radius: 0 0 10px 10px; }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal-box { width: 320px; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; box-shadow: 0 16px 36px rgba(0,0,0,0.3); text-align: center; display: flex; flex-direction: column; gap: 12px; }
+    .modal-title { font-size: 15px; font-weight: 600; color: var(--text-main); }
+    .modal-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+    .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .btn-modal { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-subtle); transition: background 120ms; }
+    .btn-modal-cancel { background: rgba(128,128,128,0.1); color: var(--text-main); }
+    .btn-modal-cancel:hover { background: rgba(128,128,128,0.18); }
+    .btn-modal-danger { background: #ff3b30; color: #fff; border-color: #ff3b30; }
+    .btn-modal-danger:hover { background: #e0352b; }
+
+    /* 8. About App Styles */
+    .about-container { padding: 28px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .about-logo { width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0,0,0,0.25); color: var(--accent); }
+    .about-title { font-size: 18px; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
+    .about-desc { font-size: 13px; color: var(--text-muted); max-width: 360px; line-height: 1.5; }
+    .about-meta { width: 100%; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; font-size: 11px; text-align: left; line-height: 1.8; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* 9. Taskbar */
+    #taskbar { position: fixed; bottom: 0; left: 0; right: 0; height: 44px; background: var(--taskbar-bg); backdrop-filter: blur(30px) saturate(180%); border-top: 1px solid var(--taskbar-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 9999; }
+    .taskbar-left { display: flex; align-items: center; gap: 6px; }
+    .taskbar-btn { width: 36px; height: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer; transition: transform 140ms ease-out, background 140ms ease-out; position: relative; }
+    .taskbar-btn:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.06); }
+    .taskbar-icon-wrap { display: flex; align-items: center; justify-content: center; }
+    .taskbar-dot { position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); display: none; opacity: 0; transform: translateY(0); transition: opacity 160ms ease-out, transform 160ms ease-out; }
+    .taskbar-dot.active { display: block; opacity: 1; transform: translateY(-2px); }
+    #taskbar-clock { font-size: 12px; font-weight: 500; color: var(--text-main); font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Full-screen Boot Screen -->
+  <div id="boot-screen">
+    <div id="boot-log"></div>
+    <div><span class="boot-cursor"></span></div>
+  </div>
+
+  <!-- 2. Desktop Environment -->
+  <div id="desktop">
+    <div id="desktop-icons">
+      <div class="desktop-icon" id="icon-terminal" title="Terminal">
+        <div class="icon-symbol" id="icon-sym-terminal"></div>
+        <span class="icon-title">Terminal</span>
+      </div>
+      <div class="desktop-icon" id="icon-taskmgr" title="Task Manager">
+        <div class="icon-symbol" id="icon-sym-taskmgr"></div>
+        <span class="icon-title">Task Manager</span>
+      </div>
+      <div class="desktop-icon" id="icon-kernellog" title="Kernel Log">
+        <div class="icon-symbol" id="icon-sym-kernellog"></div>
+        <span class="icon-title">Kernel Log</span>
+      </div>
+      <div class="desktop-icon" id="icon-settings" title="Settings">
+        <div class="icon-symbol" id="icon-sym-settings"></div>
+        <span class="icon-title">Settings</span>
+      </div>
+      <div class="desktop-icon" id="icon-about" title="About WebOS">
+        <div class="icon-symbol" id="icon-sym-about"></div>
+        <span class="icon-title">About</span>
+      </div>
+    </div>
+    <div id="windows-container"></div>
+  </div>
+
+  <!-- 3. Fixed Bottom Taskbar -->
+  <div id="taskbar">
+    <div class="taskbar-left">
+      <button class="taskbar-btn" id="taskbar-btn-terminal" title="Terminal">
+        <div class="taskbar-icon-wrap" id="tb-icon-terminal"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+      <button class="taskbar-btn" id="taskbar-btn-taskmgr" title="Task Manager">
+        <div class="taskbar-icon-wrap" id="tb-icon-taskmgr"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+      <button class="taskbar-btn" id="taskbar-btn-kernellog" title="Kernel Log">
+        <div class="taskbar-icon-wrap" id="tb-icon-kernellog"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+      <button class="taskbar-btn" id="taskbar-btn-settings" title="Settings">
+        <div class="taskbar-icon-wrap" id="tb-icon-settings"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+      <button class="taskbar-btn" id="taskbar-btn-about" title="About WebOS">
+        <div class="taskbar-icon-wrap" id="tb-icon-about"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+    </div>
+    <div class="taskbar-right">
+      <div id="taskbar-clock">00:00</div>
+    </div>
+  </div>
+
+  <!-- OS Logic -->
+  <script>
+    /**
+     * WebOS v5 - Simulated Browser Operating System with macOS Sequoia UI/UX & Pro Theming
+     * Core subsystems: Icons, Settings, Kernel, Scheduler, VFS, WindowManager, Shell, Apps.
+     */
+
+    // --- 0. Icon & Theming Subsystems (macOS Design System) ---
+    const Icons = {
+      terminal: '<polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line>',
+      folder: '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>',
+      file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><polyline points="14 2 14 8 20 8"></polyline>',
+      fileText: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="10" y1="13" x2="14" y2="13"></line><line x1="10" y1="17" x2="14" y2="17"></line>',
+      activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>',
+      info: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>',
+      settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>',
+      log: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path>',
+      close: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+      minimize: '<line x1="5" y1="12" x2="19" y2="12"></line>',
+      maximize: '<polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line>',
+      chevron: '<polyline points="9 18 15 12 9 6"></polyline>',
+      search: '<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>',
+      sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>',
+      palette: '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"></path>',
+      power: '<path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line>',
+      plus: '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>',
+      trash: '<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>',
+      edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>',
+      image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>',
+      droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>',
+      type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>',
+      alignLeft: '<line x1="21" x2="3" y1="6" y2="6"></line><line x1="15" x2="3" y1="12" y2="12"></line><line x1="17" x2="3" y1="18" y2="18"></line>'
+    };
+
+    function getIconSvg(name, size = 16, className = '') {
+      const content = Icons[name] || '';
+      return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
+    }
+
+    const Accents = {
+      blue: { hex: '#0a84ff', rgb: '10, 132, 255', name: 'Blue' },
+      purple: { hex: '#bf5af2', rgb: '191, 90, 242', name: 'Purple' },
+      pink: { hex: '#ff375f', rgb: '255, 55, 95', name: 'Pink' },
+      red: { hex: '#ff453a', rgb: '255, 69, 58', name: 'Red' },
+      orange: { hex: '#ff9f0a', rgb: '255, 159, 10', name: 'Orange' },
+      yellow: { hex: '#ffd60a', rgb: '255, 214, 10', name: 'Yellow' },
+      green: { hex: '#30d158', rgb: '48, 209, 88', name: 'Green' },
+      graphite: { hex: '#8e8e93', rgb: '142, 142, 147', name: 'Graphite' }
+    };
+
+    const Wallpapers = {
+      'sequoia-dark': { name: 'Sequoia Dark', bg: 'radial-gradient(circle at 50% 30%, #1e2640 0%, #0d111a 60%, #06080d 100%)' },
+      'sequoia-light': { name: 'Sequoia Light', bg: 'linear-gradient(135deg, #d8e2ec 0%, #b8c8d8 50%, #9cb0c5 100%)' },
+      'midnight': { name: 'Midnight', bg: 'radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)' },
+      'slate': { name: 'Slate', bg: '#1e242c' },
+      'silver': { name: 'Silver', bg: '#e2e5e9' },
+      'aurora': { name: 'Aurora', bg: 'linear-gradient(145deg, #141e30 0%, #243b55 100%)' }
+    };
+
+    const Settings = {
+      defaults: {
+        mode: 'dark',
+        accent: 'blue',
+        wallpaper: 'sequoia-dark',
+        motion: 'full',
+        termFontSize: 13,
+        termShowPath: true,
+        termLineHeight: 1.5
+      },
+      current: {},
+
+      load() {
+        try {
+          const saved = localStorage.getItem('webos.settings');
+          this.current = saved ? Object.assign({}, this.defaults, JSON.parse(saved)) : Object.assign({}, this.defaults);
+        } catch (e) {
+          this.current = Object.assign({}, this.defaults);
+        }
+        const legacyMode = localStorage.getItem('webos.theme.mode');
+        if (legacyMode && ['dark', 'light', 'auto'].includes(legacyMode)) {
+          this.current.mode = legacyMode;
+        }
+        this.apply();
+      },
+
+      save() {
+        try {
+          localStorage.setItem('webos.settings', JSON.stringify(this.current));
+          localStorage.setItem('webos.theme.mode', this.current.mode);
+        } catch (e) {}
+      },
+
+      apply() {
+        const root = document.documentElement;
+        let effectiveMode = this.current.mode;
+        if (effectiveMode === 'auto') {
+          effectiveMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        root.setAttribute('data-theme', effectiveMode);
+        root.setAttribute('data-motion', this.current.motion);
+
+        const acc = Accents[this.current.accent] || Accents.blue;
+        root.style.setProperty('--accent', acc.hex);
+        root.style.setProperty('--accent-rgb', acc.rgb);
+
+        const wp = Wallpapers[this.current.wallpaper] || Wallpapers['sequoia-dark'];
+        root.style.setProperty('--bg-desktop', wp.bg);
+        root.style.setProperty('--term-font-size', this.current.termFontSize + 'px');
+        root.style.setProperty('--term-line-height', this.current.termLineHeight || 1.5);
+
+        this.save();
+        if (typeof renderSettingsUi === 'function') renderSettingsUi();
+      },
+
+      set(key, val) {
+        if (key === 'mode') {
+          if (!['dark', 'light', 'auto'].includes(val)) throw new Error('mode must be dark, light, or auto');
+          this.current.mode = val;
+        } else if (key === 'accent') {
+          if (!Accents[val]) throw new Error('valid accents: ' + Object.keys(Accents).join(', '));
+          this.current.accent = val;
+        } else if (key === 'wallpaper') {
+          if (!Wallpapers[val]) throw new Error('valid wallpapers: ' + Object.keys(Wallpapers).join(', '));
+          this.current.wallpaper = val;
+        } else if (key === 'motion') {
+          if (!['full', 'reduced'].includes(val)) throw new Error('motion must be full or reduced');
+          this.current.motion = val;
+        } else if (key === 'termFontSize') {
+          const s = parseInt(val, 10);
+          if (isNaN(s) || s < 12 || s > 16) throw new Error('termFontSize must be 12-16');
+          this.current.termFontSize = s;
+        } else if (key === 'termShowPath') {
+          this.current.termShowPath = val === 'true' || val === true;
+        } else if (key === 'termLineHeight') {
+          const lh = parseFloat(val);
+          if (isNaN(lh) || lh < 1.3 || lh > 1.8) throw new Error('termLineHeight must be 1.3-1.8');
+          this.current.termLineHeight = +(lh.toFixed(1));
+        } else {
+          throw new Error('unknown setting key: ' + key);
+        }
+        this.apply();
+      },
+
+      reset() {
+        this.current = Object.assign({}, this.defaults);
+        this.apply();
+      }
+    };
+    const Kernel = {
+      processes: [],
+      nextPid: 1,
+
+      // --- Weighted Round-Robin Scheduler ---
+      scheduler: {
+        quantumMs: 100,
+        tickInterval: null,
+        totalTicks: 0,
+        currentPid: null,
+        history: [], // Ring buffer capped at 200 lines
+        poolIndex: 0,
+
+        start() {
+          if (this.tickInterval) clearInterval(this.tickInterval);
+          this.tickInterval = setInterval(() => this.step(), this.quantumMs);
+        },
+
+        step() {
+          this.totalTicks++;
+
+          const candidates = Kernel.processes.filter(p => p.state === 'ready' || p.state === 'running');
+          if (candidates.length === 0) {
+            this.currentPid = null;
+            return;
+          }
+
+          const pool = [];
+          candidates.forEach(p => {
+            const weight = Math.max(1, Math.min(5, p.priority || 1));
+            for (let i = 0; i < weight; i++) pool.push(p.pid);
+          });
+
+          this.poolIndex = this.poolIndex % pool.length;
+          const nextPid = pool[this.poolIndex];
+          this.poolIndex = (this.poolIndex + 1) % pool.length;
+
+          const prevPid = this.currentPid;
+          const prevProc = Kernel.processes.find(p => p.pid === prevPid);
+          const nextProc = Kernel.processes.find(p => p.pid === nextPid);
+
+          if (prevProc && prevProc.pid !== nextPid && prevProc.state === 'running') {
+            prevProc.state = 'ready';
+          }
+
+          if (nextProc) {
+            if (nextProc.state !== 'running') {
+              nextProc.state = 'running';
+              nextProc.schedCount++;
+            }
+            nextProc.ticksRun++;
+            this.currentPid = nextPid;
+          }
+
+          const uptime = this.totalTicks * this.quantumMs;
+          const prevName = prevProc ? prevProc.name : (prevPid ? 'proc' : '-');
+          const nextName = nextProc ? nextProc.name : 'idle';
+          const logLine = `[ ${String(uptime).padStart(5, ' ')}ms] pid ${prevPid || '-'} ${prevName} -> pid ${nextPid} ${nextName}`;
+          this.history.push(logLine);
+          if (this.history.length > 200) this.history.shift();
+
+          Kernel.processes.forEach(p => {
+            if (!p.recentTicks) p.recentTicks = [];
+            p.recentTicks.push(p.pid === nextPid ? 1 : 0);
+            if (p.recentTicks.length > 50) p.recentTicks.shift();
+            p.cpu = +((p.recentTicks.reduce((a, b) => a + b, 0) / p.recentTicks.length) * 100).toFixed(1);
+          });
+        }
+      },
+
+      // --- Virtual Filesystem Subsystem (Kernel.fs) ---
+      fs: {
+        root: null,
+
+        normalize(path, cwd = '/') {
+          if (!path || typeof path !== 'string') return cwd;
+          const isAbsolute = path.startsWith('/');
+          const combined = isAbsolute ? path : (cwd === '/' ? `/${path}` : `${cwd}/${path}`);
+          const parts = combined.split('/');
+          const stack = [];
+          for (const seg of parts) {
+            if (!seg || seg === '.') continue;
+            if (seg === '..') {
+              if (stack.length > 0) stack.pop();
+            } else {
+              stack.push(seg);
+            }
+          }
+          return '/' + stack.join('/');
+        },
+
+        resolve(path, cwd = '/') {
+          const canonical = this.normalize(path, cwd);
+          if (canonical === '/') return this.root;
+          const parts = canonical.slice(1).split('/');
+          let curr = this.root;
+          for (const part of parts) {
+            if (!curr || curr.type !== 'dir' || !curr.children) return null;
+            curr = curr.children[part];
+            if (!curr) return null;
+          }
+          return curr;
+        },
+
+        resolveParent(path, cwd = '/') {
+          const canonical = this.normalize(path, cwd);
+          if (canonical === '/') return null;
+          const idx = canonical.lastIndexOf('/');
+          const parentPath = idx === 0 ? '/' : canonical.slice(0, idx);
+          const name = canonical.slice(idx + 1);
+          const parentNode = this.resolve(parentPath, '/');
+          if (!parentNode || parentNode.type !== 'dir') return null;
+          return { parentNode, name, canonical };
+        },
+
+        mkdir(path, cwd = '/') {
+          const parentInfo = this.resolveParent(path, cwd);
+          if (!parentInfo) throw new Error('parent directory not found');
+          const { parentNode, name } = parentInfo;
+          if (parentNode.children[name]) throw new Error(`file or directory already exists: '${name}'`);
+          parentNode.children[name] = { type: 'dir', name, children: {} };
+          this.save();
+        },
+
+        touch(path, cwd = '/', content = '') {
+          const parentInfo = this.resolveParent(path, cwd);
+          if (!parentInfo) throw new Error('parent directory not found');
+          const { parentNode, name } = parentInfo;
+          if (parentNode.children[name]) throw new Error(`file or directory already exists: '${name}'`);
+          parentNode.children[name] = { type: 'file', name, content: String(content) };
+          this.save();
+        },
+
+        write(path, cwd = '/', content = '') {
+          const node = this.resolve(path, cwd);
+          if (!node) throw new Error(`no such file: '${path}'`);
+          if (node.type !== 'file') throw new Error(`not a file: '${path}'`);
+          node.content = String(content);
+          this.save();
+        },
+
+        read(path, cwd = '/') {
+          const node = this.resolve(path, cwd);
+          if (!node) throw new Error(`no such file: '${path}'`);
+          if (node.type !== 'file') throw new Error(`not a file: '${path}'`);
+          return node.content;
+        },
+
+        list(path, cwd = '/') {
+          const node = this.resolve(path, cwd);
+          if (!node) throw new Error(`no such directory: '${path}'`);
+          if (node.type !== 'dir') throw new Error(`not a directory: '${path}'`);
+          return Object.keys(node.children);
+        },
+
+        remove(path, cwd = '/') {
+          const canonical = this.normalize(path, cwd);
+          if (canonical === '/') throw new Error('cannot remove root directory');
+          const parentInfo = this.resolveParent(path, cwd);
+          if (!parentInfo) throw new Error(`no such file or directory: '${path}'`);
+          const { parentNode, name } = parentInfo;
+          const target = parentNode.children[name];
+          if (!target) throw new Error(`no such file or directory: '${path}'`);
+          if (target.type === 'dir' && Object.keys(target.children).length > 0) {
+            throw new Error(`directory not empty: '${name}'`);
+          }
+          delete parentNode.children[name];
+          this.save();
+        },
+
+        wipe() {
+          this.root = { type: 'dir', name: '', children: {} };
+          this.save();
+        },
+
+        save() {
+          try {
+            localStorage.setItem('webos.fs', JSON.stringify(this.root));
+          } catch (e) { console.error('Kernel.fs.save failed:', e); }
+        },
+
+        load() {
+          try {
+            const raw = localStorage.getItem('webos.fs');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && parsed.type === 'dir' && parsed.children && Object.keys(parsed.children).length > 0) {
+                this.root = parsed;
+                return;
+              }
+            }
+          } catch (e) {}
+          this.root = this.createDefaultTree();
+          this.save();
+        },
+
+        createDefaultTree() {
+          return {
+            type: 'dir', name: '',
+            children: {
+              bin: { type: 'dir', name: 'bin', children: {} },
+              etc: { type: 'dir', name: 'etc', children: {} },
+              tmp: { type: 'dir', name: 'tmp', children: {} },
+              home: {
+                type: 'dir', name: 'home',
+                children: { user: { type: 'dir', name: 'user', children: {} } }
+              },
+              'README.txt': {
+                type: 'file', name: 'README.txt',
+                content: 'Welcome to WebOS.\nThis is your virtual filesystem.'
+              }
+            }
+          };
+        },
+
+        count() {
+          let dirs = 0, files = 0;
+          const walk = (n, isRoot = false) => {
+            if (!n) return;
+            if (n.type === 'dir') {
+              if (!isRoot) dirs++;
+              for (const child of Object.values(n.children || {})) walk(child, false);
+            } else if (n.type === 'file') {
+              files++;
+            }
+          };
+          walk(this.root, true);
+          return { dirs, files };
+        }
+      },
+
+      // Spawn a new process with scheduler attributes
+      spawn(name, priority = 1, mem = 16, cwd = '/home/user') {
+        const pid = this.nextPid++;
+        const proc = {
+          pid,
+          name,
+          cpu: 0,
+          mem: Number(mem.toFixed(1)),
+          state: 'ready',
+          cwd,
+          priority: Math.max(1, Math.min(5, parseInt(priority, 10) || 1)),
+          ticksRun: 0,
+          schedCount: 0,
+          spawnedAt: Date.now(),
+          recentTicks: []
+        };
+        this.processes.push(proc);
+        return pid;
+      },
+
+      // Kill process and cascade closure to windows
+      kill(pid) {
+        const p = this.processes.find(proc => proc.pid === pid);
+        if (!p) return false;
+        this.processes = this.processes.filter(proc => proc.pid !== pid);
+        if (this.scheduler.currentPid === pid) {
+          this.scheduler.currentPid = null;
+        }
+        WindowManager.closeByPid(pid);
+        return true;
+      }
+    };
+
+    // --- 2. Window Manager Subsystem ---
+    const WindowManager = {
+      windows: [],
+      highestZIndex: 100,
+      cascadeOffset: 0,
+
+      updateTaskbarDots() {
+        const apps = ['terminal', 'taskmgr', 'kernellog', 'settings', 'about'];
+        apps.forEach(app => {
+          const btn = document.getElementById('taskbar-btn-' + app);
+          if (!btn) return;
+          const dot = btn.querySelector('.taskbar-dot');
+          const hasOpen = this.windows.some(w => w.appKey === app && w.el.style.display !== 'none');
+          if (dot) {
+            if (hasOpen) {
+              dot.style.display = 'block';
+              requestAnimationFrame(() => dot.classList.add('active'));
+            } else {
+              dot.classList.remove('active');
+              setTimeout(() => { if (!dot.classList.contains('active')) dot.style.display = 'none'; }, 160);
+            }
+          }
+        });
+      },
+
+      focus(winEl) {
+        this.highestZIndex++;
+        winEl.style.zIndex = this.highestZIndex;
+        document.querySelectorAll('.window').forEach(w => w.classList.remove('focused'));
+        winEl.classList.add('focused');
+        this.updateTaskbarDots();
+      },
+
+      restore(winEl) {
+        winEl.style.display = 'flex';
+        winEl.classList.add('window-minimizing');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            winEl.classList.remove('window-minimizing');
+          });
+        });
+        this.focus(winEl);
+        this.updateTaskbarDots();
+      },
+
+      closeByPid(pid) {
+        const targets = this.windows.filter(w => w.pid === pid);
+        targets.forEach(w => {
+          if (w.onClose) {
+            try { w.onClose(); } catch (err) { console.error(err); }
+          }
+          if (w.el && w.el.parentNode) w.el.parentNode.removeChild(w.el);
+        });
+        this.windows = this.windows.filter(w => w.pid !== pid);
+        this.updateTaskbarDots();
+      },
+
+      createWindow({ title, pid, width = 500, height = 340, contentEl, onClose, appKey = null }) {
+        const winEl = document.createElement('div');
+        winEl.className = 'window window-opening focused';
+        winEl.dataset.pid = pid;
+        setTimeout(() => winEl.classList.remove('window-opening'), 220);
+
+        const offset = (this.cascadeOffset * 28) % 168;
+        this.cascadeOffset++;
+        const left = Math.max(30, Math.min(window.innerWidth - width - 40, 60 + offset));
+        const top = Math.max(30, Math.min(window.innerHeight - 84 - height, 50 + offset));
+
+        winEl.style.width = width + 'px';
+        winEl.style.height = height + 'px';
+        winEl.style.left = left + 'px';
+        winEl.style.top = top + 'px';
+        this.highestZIndex++;
+        winEl.style.zIndex = this.highestZIndex;
+
+        const titlebar = document.createElement('div');
+        titlebar.className = 'titlebar';
+        titlebar.innerHTML = `
+          <div class="traffic-lights">
+            <button class="traffic-btn btn-close" title="Close"><span class="traffic-glyph">&times;</span></button>
+            <button class="traffic-btn btn-minimize" title="Minimize"><span class="traffic-glyph">&minus;</span></button>
+            <button class="traffic-btn btn-maximize" title="Maximize"><span class="traffic-glyph">+</span></button>
+          </div>
+          <div class="window-title">${title}</div>
+          <div class="titlebar-spacer"></div>
+        `;
+
+        const contentArea = document.createElement('div');
+        contentArea.className = 'window-content';
+        if (contentEl) contentArea.appendChild(contentEl);
+
+        winEl.appendChild(titlebar);
+        winEl.appendChild(contentArea);
+        document.getElementById('windows-container').appendChild(winEl);
+
+        const winRecord = { pid, title, appKey, el: winEl, onClose: onClose || null, isMaximized: false, savedBounds: null };
+        this.windows.push(winRecord);
+        this.focus(winEl);
+
+        winEl.addEventListener('mousedown', () => this.focus(winEl));
+
+        titlebar.querySelector('.btn-close').addEventListener('click', (e) => {
+          e.stopPropagation();
+          winEl.classList.add('window-closing');
+          setTimeout(() => { Kernel.kill(pid); }, 180);
+        });
+
+        titlebar.querySelector('.btn-minimize').addEventListener('click', (e) => {
+          e.stopPropagation();
+          winEl.classList.add('window-minimizing');
+          setTimeout(() => {
+            winEl.style.display = 'none';
+            winEl.classList.remove('window-minimizing');
+            WindowManager.updateTaskbarDots();
+          }, 260);
+        });
+
+        titlebar.querySelector('.btn-maximize').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!winRecord.isMaximized) {
+            winRecord.savedBounds = { left: winEl.style.left, top: winEl.style.top, width: winEl.style.width, height: winEl.style.height };
+            winEl.classList.add('maximized');
+            winEl.style.left = '0px'; winEl.style.top = '0px';
+            winEl.style.width = '100vw'; winEl.style.height = 'calc(100vh - 44px)';
+            winRecord.isMaximized = true;
+          } else {
+            winEl.classList.remove('maximized');
+            winEl.style.left = winRecord.savedBounds.left;
+            winEl.style.top = winRecord.savedBounds.top;
+            winEl.style.width = winRecord.savedBounds.width;
+            winEl.style.height = winRecord.savedBounds.height;
+            winRecord.isMaximized = false;
+          }
+        });
+
+        let isDragging = false, startX, startY, origLeft, origTop;
+        titlebar.addEventListener('mousedown', (e) => {
+          if (e.target.closest('.traffic-btn') || winRecord.isMaximized) return;
+          isDragging = true;
+          winEl.classList.add('is-dragging');
+          startX = e.clientX; startY = e.clientY;
+          origLeft = winEl.offsetLeft; origTop = winEl.offsetTop;
+
+          const onMouseMove = (ev) => {
+            if (!isDragging) return;
+            const newLeft = Math.max(-width + 60, Math.min(window.innerWidth - 60, origLeft + (ev.clientX - startX)));
+            const newTop = Math.max(0, Math.min(window.innerHeight - 76, origTop + (ev.clientY - startY)));
+            winEl.style.left = newLeft + 'px'; winEl.style.top = newTop + 'px';
+          };
+          const onMouseUp = () => {
+            isDragging = false;
+            winEl.classList.remove('is-dragging');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        this.updateTaskbarDots();
+        return winEl;
+      }
+    };
+
+    // --- 3. Shell Stream Commands Registry ---
+    function formatTreeOutput(node, prefix = '') {
+      const keys = Object.keys(node.children || {}).sort();
+      const lines = [];
+      keys.forEach((key, idx) => {
+        const isLast = idx === keys.length - 1;
+        const child = node.children[key];
+        const branch = isLast ? '└── ' : '├── ';
+        const nextPrefix = prefix + (isLast ? '    ' : '│   ');
+        if (child.type === 'dir') {
+          lines.push(`${prefix}${branch}${child.name}/`);
+          lines.push(...formatTreeOutput(child, nextPrefix));
+        } else {
+          lines.push(`${prefix}${branch}${child.name}`);
+        }
+      });
+      return lines;
+    }
+
+    const Commands = {
+      help: {
+        run() {
+          return {
+            stdout: 'Available commands:\n  help                     - display list of commands\n  history                  - display command history\n  ps                       - report process status & real CPU%\n  sched                    - display scheduler statistics\n  queue                    - display scheduler weighted pool\n  nice <pid> <prio>        - adjust process priority (1-5)\n  kill <pid>               - terminate a process\n  log                      - open Kernel Log window\n  pwd                      - print working directory\n  cd <path>                - change directory\n  ls [path]                - list directory contents\n  mkdir <name>             - create directory\n  touch <name>             - create empty file\n  cat [file...]            - concatenate files or print stdin\n  write <file> <text...>   - overwrite existing file with text\n  rm <path>                - remove file or empty directory\n  tree [path]              - display directory tree structure\n  grep <pattern> [file]    - filter lines matching pattern\n  head [-n N] [file]       - print first N lines (default 10)\n  tail [-n N] [file]       - print last N lines (default 10)\n  wc [file]                - count lines, words, and characters\n  sort [file]              - sort lines alphabetically\n  uniq [file]              - filter adjacent duplicate lines\n  true                     - return success (exit 0)\n  false                    - return failure (exit 1)\n  echo [-e] <text...>      - display line of text\n  date                     - print system date and time\n  whoami                   - print effective user name\n  theme [subcmd...]        - view, export, or set system theme\n  settings                 - open System Settings window\n  clear                    - clear terminal screen',
+            code: 0
+          };
+        }
+      },
+
+      history: {
+        run(args, stdin, ctx) {
+          const lines = ctx.commandHistory.map((cmd, i) => `  ${String(i + 1).padStart(3, ' ')}  ${cmd}`);
+          return { stdout: lines.join('\n'), code: 0 };
+        }
+      },
+
+      pwd: { run(args, stdin, ctx) { return { stdout: ctx.proc.cwd, code: 0 }; } },
+
+      cd: {
+        run(args, stdin, ctx) {
+          const target = args[0] || '/home/user';
+          const resolved = Kernel.fs.resolve(target, ctx.proc.cwd);
+          if (!resolved) return { stderr: `no such file or directory: ${target}`, code: 1 };
+          if (resolved.type !== 'dir') return { stderr: `not a directory: ${target}`, code: 1 };
+          ctx.proc.cwd = Kernel.fs.normalize(target, ctx.proc.cwd);
+          ctx.updatePrompt();
+          return { code: 0 };
+        }
+      },
+
+      ls: {
+        run(args, stdin, ctx) {
+          const target = args[0] || ctx.proc.cwd;
+          const node = Kernel.fs.resolve(target, ctx.proc.cwd);
+          if (!node) return { stderr: `no such file or directory: ${target}`, code: 1 };
+          if (node.type !== 'dir') return { stderr: `not a directory: ${target}`, code: 1 };
+          const keys = Object.keys(node.children || {}).sort();
+          return {
+            stdout: keys.map(k => node.children[k].type === 'dir' ? `${k}/` : k).join('\n'),
+            code: 0
+          };
+        }
+      },
+
+      mkdir: {
+        run(args, stdin, ctx) {
+          if (!args[0]) return { stderr: 'missing operand', code: 1 };
+          try {
+            Kernel.fs.mkdir(args[0], ctx.proc.cwd);
+            return { code: 0 };
+          } catch (e) {
+            return { stderr: e.message, code: 1 };
+          }
+        }
+      },
+
+      touch: {
+        run(args, stdin, ctx) {
+          if (!args[0]) return { stderr: 'missing operand', code: 1 };
+          try {
+            Kernel.fs.touch(args[0], ctx.proc.cwd);
+            return { code: 0 };
+          } catch (e) {
+            return { stderr: e.message, code: 1 };
+          }
+        }
+      },
+
+      write: {
+        run(args, stdin, ctx) {
+          if (!args[0]) return { stderr: 'missing operand', code: 1 };
+          const text = args.slice(1).join(' ');
+          try {
+            Kernel.fs.write(args[0], ctx.proc.cwd, text);
+            return { code: 0 };
+          } catch (e) {
+            return { stderr: e.message, code: 1 };
+          }
+        }
+      },
+
+      rm: {
+        run(args, stdin, ctx) {
+          if (!args[0]) return { stderr: 'missing operand', code: 1 };
+          try {
+            Kernel.fs.remove(args[0], ctx.proc.cwd);
+            return { code: 0 };
+          } catch (e) {
+            return { stderr: e.message, code: 1 };
+          }
+        }
+      },
+
+      cat: {
+        run(args, stdin, ctx) {
+          if (args.length === 0) {
+            return { stdout: stdin !== null ? stdin : '', code: 0 };
+          }
+          const parts = [];
+          for (const f of args) {
+            try {
+              parts.push(Kernel.fs.read(f, ctx.proc.cwd));
+            } catch (e) {
+              return { stderr: `cat: ${f}: No such file or directory`, code: 1 };
+            }
+          }
+          return { stdout: parts.join('\n'), code: 0 };
+        }
+      },
+
+      echo: {
+        run(args) {
+          let parseEscapes = false;
+          let textArgs = args;
+          if (args[0] === '-e') {
+            parseEscapes = true;
+            textArgs = args.slice(1);
+          }
+          let text = textArgs.join(' ');
+          if (parseEscapes) {
+            text = text.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+          }
+          return { stdout: text, code: 0 };
+        }
+      },
+
+      grep: {
+        run(args, stdin, ctx) {
+          if (args.length === 0) return { stderr: 'usage: grep <pattern> [file]', code: 1 };
+          const pattern = args[0];
+          let sourceText = stdin !== null ? stdin : '';
+          if (args.length > 1) {
+            try {
+              sourceText = Kernel.fs.read(args[1], ctx.proc.cwd);
+            } catch (e) {
+              return { stderr: `grep: ${args[1]}: No such file or directory`, code: 1 };
+            }
+          }
+          const lines = sourceText.split('\n');
+          const matched = lines.filter(l => l.includes(pattern));
+          if (matched.length === 0) return { stdout: '', code: 1 };
+          return { stdout: matched.join('\n'), code: 0 };
+        }
+      },
+
+      head: {
+        run(args, stdin, ctx) {
+          let count = 10, file = null, i = 0;
+          while (i < args.length) {
+            if (args[i] === '-n' && args[i + 1]) { count = parseInt(args[i + 1], 10) || 10; i += 2; }
+            else if (args[i].startsWith('-') && !isNaN(parseInt(args[i].slice(1), 10))) { count = parseInt(args[i].slice(1), 10) || 10; i++; }
+            else { file = args[i++]; }
+          }
+          let sourceText = stdin !== null ? stdin : '';
+          if (file) {
+            try { sourceText = Kernel.fs.read(file, ctx.proc.cwd); }
+            catch (e) { return { stderr: `head: ${file}: No such file or directory`, code: 1 }; }
+          }
+          const lines = sourceText.split('\n');
+          return { stdout: lines.slice(0, count).join('\n'), code: 0 };
+        }
+      },
+
+      tail: {
+        run(args, stdin, ctx) {
+          let count = 10, file = null, i = 0;
+          while (i < args.length) {
+            if (args[i] === '-n' && args[i + 1]) { count = parseInt(args[i + 1], 10) || 10; i += 2; }
+            else if (args[i].startsWith('-') && !isNaN(parseInt(args[i].slice(1), 10))) { count = parseInt(args[i].slice(1), 10) || 10; i++; }
+            else { file = args[i++]; }
+          }
+          let sourceText = stdin !== null ? stdin : '';
+          if (file) {
+            try { sourceText = Kernel.fs.read(file, ctx.proc.cwd); }
+            catch (e) { return { stderr: `tail: ${file}: No such file or directory`, code: 1 }; }
+          }
+          const lines = sourceText.split('\n');
+          return { stdout: lines.slice(-count).join('\n'), code: 0 };
+        }
+      },
+
+      wc: {
+        run(args, stdin, ctx) {
+          let sourceText = stdin !== null ? stdin : '';
+          if (args[0]) {
+            try { sourceText = Kernel.fs.read(args[0], ctx.proc.cwd); }
+            catch (e) { return { stderr: `wc: ${args[0]}: No such file or directory`, code: 1 }; }
+          }
+          if (!sourceText) return { stdout: '  0  0  0', code: 0 };
+          const lines = sourceText.split('\n').length;
+          const words = sourceText.trim() ? sourceText.trim().split(/\s+/).length : 0;
+          const chars = sourceText.length;
+          return { stdout: `  ${lines}  ${words}  ${chars}`, code: 0 };
+        }
+      },
+
+      sort: {
+        run(args, stdin, ctx) {
+          let sourceText = stdin !== null ? stdin : '';
+          if (args[0]) {
+            try { sourceText = Kernel.fs.read(args[0], ctx.proc.cwd); }
+            catch (e) { return { stderr: `sort: ${args[0]}: No such file or directory`, code: 1 }; }
+          }
+          const lines = sourceText.split('\n');
+          lines.sort();
+          return { stdout: lines.join('\n'), code: 0 };
+        }
+      },
+
+      uniq: {
+        run(args, stdin, ctx) {
+          let sourceText = stdin !== null ? stdin : '';
+          if (args[0]) {
+            try { sourceText = Kernel.fs.read(args[0], ctx.proc.cwd); }
+            catch (e) { return { stderr: `uniq: ${args[0]}: No such file or directory`, code: 1 }; }
+          }
+          const lines = sourceText.split('\n');
+          const out = [];
+          lines.forEach(l => {
+            if (out.length === 0 || out[out.length - 1] !== l) out.push(l);
+          });
+          return { stdout: out.join('\n'), code: 0 };
+        }
+      },
+
+      true: { run() { return { code: 0 }; } },
+      false: { run() { return { code: 1 }; } },
+
+      tree: {
+        run(args, stdin, ctx) {
+          const target = args[0] || ctx.proc.cwd;
+          const node = Kernel.fs.resolve(target, ctx.proc.cwd);
+          if (!node) return { stderr: `no such file or directory: ${target}`, code: 1 };
+          if (node.type !== 'dir') return { stderr: `not a directory: ${target}`, code: 1 };
+          const canonical = Kernel.fs.normalize(target, ctx.proc.cwd);
+          const lines = [canonical, ...formatTreeOutput(node)];
+          const subCount = Kernel.fs.count();
+          lines.push(`\n${subCount.dirs} directories, ${subCount.files} files`);
+          return { stdout: lines.join('\n'), code: 0 };
+        }
+      },
+
+      ps: {
+        run() {
+          const out = '  PID  NAME          CPU%     MEM       STATE     SCHEDS  PRIO\n' +
+            Kernel.processes.map(p =>
+              `  ${String(p.pid).padEnd(4)} ` +
+              `${p.name.padEnd(13)} ` +
+              `${String(p.cpu + '%').padEnd(8)} ` +
+              `${String(p.mem + 'MB').padEnd(9)} ` +
+              `${p.state.padEnd(9)} ` +
+              `${String(p.schedCount).padEnd(7)} ` +
+              `${p.priority}`
+            ).join('\n');
+          return { stdout: out, code: 0 };
+        }
+      },
+
+      sched: {
+        run() {
+          const uptimeSec = ((Kernel.scheduler.totalTicks * Kernel.scheduler.quantumMs) / 1000).toFixed(1);
+          const currProc = Kernel.processes.find(p => p.pid === Kernel.scheduler.currentPid);
+          const currStr = currProc ? `pid ${currProc.pid} (${currProc.name})` : 'none';
+          return {
+            stdout: [
+              'Scheduler: weighted round-robin',
+              `Quantum: ${Kernel.scheduler.quantumMs}ms`,
+              `Total ticks: ${Kernel.scheduler.totalTicks}`,
+              `Uptime: ${uptimeSec}s`,
+              `Currently running: ${currStr}`
+            ].join('\n'),
+            code: 0
+          };
+        }
+      },
+
+      queue: {
+        run() {
+          const candidates = Kernel.processes.filter(p => p.state === 'ready' || p.state === 'running');
+          const pool = [];
+          candidates.forEach(p => {
+            const w = Math.max(1, Math.min(5, p.priority || 1));
+            for (let i = 0; i < w; i++) pool.push({ pid: p.pid, name: p.name, prio: p.priority });
+          });
+          const lines = [`Weighted Pool (${pool.length} entries):`];
+          pool.forEach((item, idx) => {
+            const isCurrent = item.pid === Kernel.scheduler.currentPid;
+            lines.push(`  [${String(idx + 1).padStart(2, ' ')}] pid ${item.pid} (${item.name}, prio ${item.prio})${isCurrent ? ' *RUNNING*' : ''}`);
+          });
+          lines.push(`Currently running: pid ${Kernel.scheduler.currentPid || 'none'}`);
+          return { stdout: lines.join('\n'), code: 0 };
+        }
+      },
+
+      kill: {
+        run(args) {
+          const targetPid = parseInt(args[0], 10);
+          if (isNaN(targetPid)) return { stderr: 'usage: kill <pid>', code: 1 };
+          const targetProc = Kernel.processes.find(p => p.pid === targetPid);
+          if (!targetProc) return { stderr: `no such process: ${targetPid}`, code: 1 };
+          Kernel.kill(targetPid);
+          return { stdout: `killed process ${targetPid} (${targetProc.name})`, code: 0 };
+        }
+      },
+
+      nice: {
+        run(args) {
+          const targetPid = parseInt(args[0], 10);
+          const newPrio = parseInt(args[1], 10);
+          if (isNaN(targetPid) || isNaN(newPrio)) return { stderr: 'usage: nice <pid> <priority>', code: 1 };
+          if (newPrio < 1 || newPrio > 5) return { stderr: 'priority must be between 1 and 5', code: 1 };
+          const targetProc = Kernel.processes.find(p => p.pid === targetPid);
+          if (!targetProc) return { stderr: `no such process: ${targetPid}`, code: 1 };
+          targetProc.priority = newPrio;
+          return { stdout: `set priority of pid ${targetPid} (${targetProc.name}) to ${newPrio}`, code: 0 };
+        }
+      },
+
+      log: {
+        run() {
+          launchKernelLog();
+          return { code: 0 };
+        }
+      },
+
+      clear: {
+        run(args, stdin, ctx) {
+          ctx.clearHistory();
+          return { code: 0 };
+        }
+      },
+
+      date: { run() { return { stdout: new Date().toString(), code: 0 }; } },
+      whoami: { run() { return { stdout: 'user', code: 0 }; } },
+
+      theme: {
+        run(args) {
+          const sub = args[0] ? args[0].toLowerCase() : '';
+          if (!sub) {
+            const s = Settings.current;
+            const lines = [
+              'System Theme Settings:',
+              `  Mode:           ${s.mode}`,
+              `  Accent:         ${s.accent} (${(Accents[s.accent] || {}).hex || ''})`,
+              `  Wallpaper:      ${s.wallpaper}`,
+              `  Motion:         ${s.motion}`,
+              `  Term Font Size: ${s.termFontSize}px`,
+              `  Term Show Path: ${s.termShowPath}`
+            ];
+            return { stdout: lines.join('\n'), code: 0 };
+          }
+          if (sub === 'export') {
+            return { stdout: JSON.stringify(Settings.current, null, 2), code: 0 };
+          }
+          if (sub === 'reset') {
+            Settings.reset();
+            return { stdout: 'Theme reset to system defaults.', code: 0 };
+          }
+          if (sub === 'dark' || sub === 'light' || sub === 'auto') {
+            Settings.set('mode', sub);
+            return { stdout: `Theme mode set to ${sub}.`, code: 0 };
+          }
+          if (sub === 'set') {
+            const key = args[1];
+            const val = args[2];
+            if (!key || val === undefined) return { stderr: 'usage: theme set <key> <val>', code: 1 };
+            try {
+              Settings.set(key, val);
+              return { stdout: `Updated ${key} to ${val}.`, code: 0 };
+            } catch (e) {
+              return { stderr: e.message, code: 1 };
+            }
+          }
+          return { stderr: 'usage: theme [export | reset | set <key> <val> | dark | light | auto]', code: 1 };
+        }
+      },
+
+      settings: {
+        run() {
+          launchSettings();
+          return { code: 0 };
+        }
+      }
+    };
+
+    // Parser for a single command segment with redirection
+    function parseSegment(seg) {
+      const tokens = [];
+      const regex = /"([^"]*)"|'([^']*)'|>>|>|<|(\S+)/g;
+      let m;
+      while ((m = regex.exec(seg)) !== null) {
+        if (m[1] !== undefined) tokens.push(m[1]);
+        else if (m[2] !== undefined) tokens.push(m[2]);
+        else tokens.push(m[0]);
+      }
+      const words = [];
+      let stdinFile = null, stdoutFile = null, appendStdout = false;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t === '<') { stdinFile = tokens[++i]; }
+        else if (t === '>>') { stdoutFile = tokens[++i]; appendStdout = true; }
+        else if (t === '>') { stdoutFile = tokens[++i]; appendStdout = false; }
+        else if (t.startsWith('>>') && t.length > 2) { stdoutFile = t.slice(2); appendStdout = true; }
+        else if (t.startsWith('>') && t.length > 1) { stdoutFile = t.slice(1); appendStdout = false; }
+        else if (t.startsWith('<') && t.length > 1) { stdinFile = t.slice(1); }
+        else { words.push(t); }
+      }
+      return { words, stdinFile, stdoutFile, appendStdout };
+    }
+
+    // Pipeline Execution Engine
+    function executePipeline(rawLine, ctx) {
+      if (rawLine.trim() === 'rm -rf /') {
+        ctx.termState.awaitingWipeConfirm = true;
+        return { stderr: "WARNING: this will destroy the entire filesystem. Type 'yes' to confirm.", code: 1 };
+      }
+
+      const segmentStrs = rawLine.split('|');
+      const hasPipeOrRedirect = segmentStrs.length > 1 || rawLine.includes('>') || rawLine.includes('<');
+
+      let currentStdin = null;
+      let finalStdout = null;
+      let finalStderr = null;
+      let lastExitCode = 0;
+
+      for (let i = 0; i < segmentStrs.length; i++) {
+        const segStr = segmentStrs[i].trim();
+        if (!segStr) {
+          finalStderr = 'syntax error near unexpected token \'|\'';
+          lastExitCode = 2;
+          break;
+        }
+
+        const parsed = parseSegment(segStr);
+        const { words, stdinFile, stdoutFile, appendStdout } = parsed;
+
+        if (words.length === 0) {
+          finalStderr = 'syntax error: empty command in pipeline';
+          lastExitCode = 2;
+          break;
+        }
+
+        const cmdName = words[0];
+        const cmdArgs = words.slice(1);
+        const cmdObj = Commands[cmdName];
+
+        if (!cmdObj) {
+          finalStderr = `command not found: ${cmdName}`;
+          lastExitCode = 127;
+          break;
+        }
+
+        let segStdin = currentStdin;
+        if (stdinFile) {
+          try {
+            segStdin = Kernel.fs.read(stdinFile, ctx.proc.cwd);
+          } catch (err) {
+            finalStderr = `no such file or directory: ${stdinFile}`;
+            lastExitCode = 1;
+            break;
+          }
+        }
+
+        const res = cmdObj.run(cmdArgs, segStdin, ctx);
+        lastExitCode = res.code !== undefined ? res.code : 0;
+
+        if (res.stderr) {
+          finalStderr = finalStderr ? finalStderr + '\n' + res.stderr : res.stderr;
+        }
+
+        if (res.code !== 0 && !res.stdout && segmentStrs.length > 1) {
+          currentStdin = null;
+        } else {
+          currentStdin = res.stdout !== undefined ? res.stdout : null;
+        }
+
+        if (stdoutFile) {
+          const contentToWrite = res.stdout !== undefined && res.stdout !== null ? String(res.stdout) : '';
+          try {
+            const existing = Kernel.fs.resolve(stdoutFile, ctx.proc.cwd);
+            if (existing && existing.type === 'file') {
+              if (appendStdout) {
+                existing.content += (existing.content.length > 0 && !existing.content.endsWith('\n') ? '\n' : '') + contentToWrite;
+              } else {
+                existing.content = contentToWrite;
+              }
+              Kernel.fs.save();
+            } else {
+              Kernel.fs.touch(stdoutFile, ctx.proc.cwd, contentToWrite);
+            }
+          } catch (err) {
+            finalStderr = `cannot create file: ${stdoutFile}`;
+            lastExitCode = 1;
+            break;
+          }
+          currentStdin = null;
+        }
+
+        if (i === segmentStrs.length - 1 && !stdoutFile) {
+          finalStdout = res.stdout !== undefined ? res.stdout : null;
+        }
+      }
+
+      if (hasPipeOrRedirect) {
+        const uptime = Kernel.scheduler.totalTicks * Kernel.scheduler.quantumMs;
+        Kernel.scheduler.history.push(`[ ${String(uptime).padStart(5, ' ')}ms] pipe: ${rawLine.trim()} (exit ${lastExitCode})`);
+        if (Kernel.scheduler.history.length > 200) Kernel.scheduler.history.shift();
+      }
+
+      return { stdout: finalStdout, stderr: finalStderr, code: lastExitCode };
+    }
+
+    // App 1: Terminal Application
+    function launchTerminal() {
+      const pid = Kernel.spawn('terminal', 1, 22.0, '/home/user');
+      const proc = Kernel.processes.find(p => p.pid === pid);
+
+      const container = document.createElement('div');
+      container.className = 'terminal-container';
+
+      const historyContainer = document.createElement('div');
+      historyContainer.className = 'term-history';
+      const welcome = document.createElement('div');
+      welcome.className = 'term-line';
+      welcome.textContent = 'WebOS v5 Terminal (macOS Streams & Pipes). Type "help" for a list of commands.\n';
+      historyContainer.appendChild(welcome);
+
+      const escapeHtml = str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const getPromptHtml = () => {
+        const pathPart = Settings.current.termShowPath ? `<span class="term-prompt-path">${escapeHtml(proc.cwd)}</span>` : '';
+        return `<span class="term-prompt-symbol">user@webos:</span>${pathPart}<span class="term-prompt-symbol">$</span>`;
+      };
+
+      const promptRow = document.createElement('div');
+      promptRow.className = 'term-prompt-row';
+      promptRow.innerHTML = `<span class="term-prompt-wrap">${getPromptHtml()}</span> <input type="text" class="term-input" spellcheck="false" autocomplete="off" autofocus />`;
+
+      container.appendChild(historyContainer);
+      container.appendChild(promptRow);
+
+      const promptWrap = promptRow.querySelector('.term-prompt-wrap');
+      const input = promptRow.querySelector('.term-input');
+      container.addEventListener('click', () => { if (!input.disabled) input.focus(); });
+
+      const updatePrompt = () => { promptWrap.innerHTML = getPromptHtml(); };
+
+      const termState = { awaitingWipeConfirm: false, locked: false };
+      const commandHistory = [];
+      let historyIndex = -1;
+      let tempInput = '';
+
+      const ctx = {
+        proc,
+        termState,
+        commandHistory,
+        updatePrompt,
+        clearHistory: () => { historyContainer.innerHTML = ''; }
+      };
+
+      input.addEventListener('keydown', (e) => {
+        // Ctrl+L shortcut to clear terminal
+        if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+          e.preventDefault();
+          historyContainer.innerHTML = '';
+          container.scrollTop = container.scrollHeight;
+          return;
+        }
+
+        // Ctrl+C shortcut to cancel line
+        if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+          e.preventDefault();
+          const commandLine = document.createElement('div');
+          commandLine.className = 'term-line';
+          commandLine.innerHTML = `<span class="term-prompt-wrap">${getPromptHtml()}</span> ${escapeHtml(input.value)}^C`;
+          historyContainer.appendChild(commandLine);
+          input.value = '';
+          historyIndex = -1;
+          container.scrollTop = container.scrollHeight;
+          return;
+        }
+
+        // Up arrow: navigate backward in command history
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (commandHistory.length === 0) return;
+          if (historyIndex === -1) tempInput = input.value;
+          if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            input.value = commandHistory[commandHistory.length - 1 - historyIndex];
+          }
+          return;
+        }
+
+        // Down arrow: navigate forward in command history
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (historyIndex > 0) {
+            historyIndex--;
+            input.value = commandHistory[commandHistory.length - 1 - historyIndex];
+          } else if (historyIndex === 0) {
+            historyIndex = -1;
+            input.value = tempInput;
+          }
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          if (termState.locked) return;
+          const raw = input.value;
+          const trimmed = raw.trim();
+
+          const commandLine = document.createElement('div');
+          commandLine.className = 'term-line';
+          commandLine.innerHTML = `<span class="term-prompt-wrap">${getPromptHtml()}</span> ${escapeHtml(raw)}`;
+          historyContainer.appendChild(commandLine);
+
+          if (termState.awaitingWipeConfirm) {
+            if (trimmed.toLowerCase() === 'yes') {
+              Kernel.fs.wipe();
+              const outDiv = document.createElement('div');
+              outDiv.className = 'term-output error-msg';
+              outDiv.textContent = 'Filesystem destroyed. Reload to rebuild.';
+              historyContainer.appendChild(outDiv);
+              termState.locked = true;
+              input.disabled = true;
+              promptRow.style.display = 'none';
+              container.scrollTop = container.scrollHeight;
+              return;
+            } else {
+              const outDiv = document.createElement('div');
+              outDiv.className = 'term-output';
+              outDiv.textContent = 'aborted.';
+              historyContainer.appendChild(outDiv);
+              termState.awaitingWipeConfirm = false;
+              input.value = '';
+              container.scrollTop = container.scrollHeight;
+              return;
+            }
+          }
+
+          if (trimmed === '') {
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+            return;
+          }
+
+          commandHistory.push(raw);
+          historyIndex = -1;
+
+          const res = executePipeline(raw, ctx);
+
+          if (res.stdout) {
+            const outDiv = document.createElement('div');
+            outDiv.className = 'term-output';
+            outDiv.textContent = res.stdout;
+            historyContainer.appendChild(outDiv);
+          }
+
+          if (res.stderr) {
+            const outDiv = document.createElement('div');
+            outDiv.className = 'term-output error-msg';
+            outDiv.textContent = res.stderr;
+            historyContainer.appendChild(outDiv);
+          }
+
+          input.value = '';
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+
+      WindowManager.createWindow({ title: 'Terminal', pid, width: 540, height: 360, contentEl: container, appKey: 'terminal' });
+      setTimeout(() => input.focus(), 50);
+    }
+
+    // App 2: Kernel Log Application
+    function launchKernelLog() {
+      const existing = WindowManager.windows.find(w => w.title === 'Kernel Log');
+      if (existing) {
+        WindowManager.restore(existing.el);
+        return;
+      }
+
+      const pid = Kernel.spawn('kernellog', 1, 14.0);
+      const container = document.createElement('div');
+      container.className = 'kernellog-container';
+
+      const renderLog = () => {
+        container.textContent = Kernel.scheduler.history.join('\n') || 'Initializing scheduler history...';
+        container.scrollTop = container.scrollHeight;
+      };
+      renderLog();
+
+      const refreshIntervalId = setInterval(renderLog, 200);
+
+      WindowManager.createWindow({
+        title: 'Kernel Log',
+        pid,
+        width: 500,
+        height: 330,
+        contentEl: container,
+        appKey: 'kernellog',
+        onClose: () => { clearInterval(refreshIntervalId); }
+      });
+    }
+
+    // App 3: Task Manager Application
+    function launchTaskManager() {
+      const existing = WindowManager.windows.find(w => w.title === 'Task Manager');
+      if (existing) {
+        WindowManager.restore(existing.el);
+        return;
+      }
+
+      const pid = Kernel.spawn('taskmgr', 1, 28.5);
+      const container = document.createElement('div');
+      container.className = 'taskmgr-container';
+
+      const summaryDiv = document.createElement('div');
+      summaryDiv.className = 'taskmgr-header-summary';
+
+      const table = document.createElement('table');
+      table.className = 'taskmgr-table';
+      table.innerHTML = `
+        <thead>
+          <tr><th>PID</th><th>Name</th><th>CPU%</th><th>Mem</th><th>State</th><th>Scheds</th><th>Prio</th></tr>
+        </thead>
+        <tbody id="taskmgr-tbody"></tbody>
+      `;
+      container.appendChild(summaryDiv);
+      container.appendChild(table);
+
+      const tbody = table.querySelector('tbody');
+      const renderProcesses = () => {
+        let totalCpu = 0, totalMem = 0;
+        tbody.innerHTML = Kernel.processes.map(p => {
+          totalCpu += p.cpu; totalMem += p.mem;
+          const isRunning = p.state === 'running';
+          const badgeClass = isRunning ? 'badge-running' : (p.state === 'blocked' ? 'badge-blocked' : 'badge-ready');
+          return `
+            <tr class="${isRunning ? 'is-running' : ''}">
+              <td>${p.pid}</td>
+              <td style="font-weight:600; color:var(--text-main);">${p.name}</td>
+              <td style="color:var(--accent); font-weight:500;">${p.cpu.toFixed(1)}%</td>
+              <td style="color:var(--text-muted);">${p.mem.toFixed(1)} MB</td>
+              <td><span class="${badgeClass}">${p.state.toUpperCase()}</span></td>
+              <td>${p.schedCount}</td>
+              <td>${p.priority}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const fsStats = Kernel.fs.count();
+        const uptimeSec = ((Kernel.scheduler.totalTicks * Kernel.scheduler.quantumMs) / 1000).toFixed(1);
+        const currProc = Kernel.processes.find(p => p.pid === Kernel.scheduler.currentPid);
+        const currDesc = currProc ? `pid ${currProc.pid} (${currProc.name})` : 'none';
+
+        summaryDiv.innerHTML = `
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+            <span><strong>Processes:</strong> ${Kernel.processes.length} | <strong>Scheduler:</strong> RR (q=${Kernel.scheduler.quantumMs}ms) | <strong>Currently:</strong> ${currDesc} | <strong>Uptime:</strong> ${uptimeSec}s</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; color:var(--text-muted);">
+            <span><strong>Filesystem:</strong> ${fsStats.dirs} dirs, ${fsStats.files} file${fsStats.files === 1 ? '' : 's'}</span>
+            <span><strong>Total CPU:</strong> ${Math.min(100, totalCpu).toFixed(1)}% | <strong>Total Mem:</strong> ${totalMem.toFixed(1)} MB</span>
+          </div>
+        `;
+      };
+
+      renderProcesses();
+      const refreshIntervalId = setInterval(renderProcesses, 300);
+
+      WindowManager.createWindow({
+        title: 'Task Manager',
+        pid,
+        width: 520,
+        height: 350,
+        contentEl: container,
+        appKey: 'taskmgr',
+        onClose: () => { clearInterval(refreshIntervalId); }
+      });
+    }
+
+    // App 4: Settings Application (macOS Sequoia System Settings)
+    let renderSettingsUi = () => {};
+
+    function launchSettings() {
+      const existing = WindowManager.windows.find(w => w.title === 'Settings');
+      if (existing) {
+        WindowManager.restore(existing.el);
+        return;
+      }
+
+      const pid = Kernel.spawn('settings', 1, 16.0);
+      const container = document.createElement('div');
+      container.className = 'settings-container';
+
+      container.innerHTML = `
+        <div class="settings-sidebar">
+          <div class="settings-search-wrap">
+            <span class="settings-search-icon">${getIconSvg('search', 13)}</span>
+            <input class="settings-search-input" placeholder="Search" disabled />
+          </div>
+          <div class="settings-group-header">Appearance</div>
+          <div class="settings-nav-row active" data-section="appearance">
+            <span class="settings-nav-icon">${getIconSvg('palette', 14)}</span>
+            <span>Appearance</span>
+          </div>
+          <div class="settings-nav-row" data-section="wallpaper">
+            <span class="settings-nav-icon">${getIconSvg('image', 14)}</span>
+            <span>Wallpaper</span>
+          </div>
+          <div class="settings-nav-row" data-section="accent">
+            <span class="settings-nav-icon">${getIconSvg('droplet', 14)}</span>
+            <span>Accent</span>
+          </div>
+          <div class="settings-group-header">Terminal</div>
+          <div class="settings-nav-row" data-section="font">
+            <span class="settings-nav-icon">${getIconSvg('type', 14)}</span>
+            <span>Font</span>
+          </div>
+          <div class="settings-nav-row" data-section="behavior">
+            <span class="settings-nav-icon">${getIconSvg('terminal', 14)}</span>
+            <span>Behavior</span>
+          </div>
+          <div class="settings-group-header">System</div>
+          <div class="settings-nav-row" data-section="motion">
+            <span class="settings-nav-icon">${getIconSvg('activity', 14)}</span>
+            <span>Motion</span>
+          </div>
+          <div class="settings-nav-row" data-section="reset">
+            <span class="settings-nav-icon">${getIconSvg('trash', 14)}</span>
+            <span>Reset</span>
+          </div>
+        </div>
+
+        <div class="settings-content" id="settings-content-pane">
+          <div class="settings-header-card" id="settings-header-card">
+            <div class="settings-header-icon" id="settings-hdr-icon">${getIconSvg('palette', 48)}</div>
+            <h2 class="settings-header-title" id="settings-hdr-title">Appearance</h2>
+            <p class="settings-header-subtitle" id="settings-hdr-subtitle">Customize the look and feel of WebOS</p>
+          </div>
+
+          <div class="settings-card-wrap" id="card-wrap-appearance">
+            <div class="settings-card-label">Appearance</div>
+            <div class="settings-card" id="card-appearance">
+              <div class="settings-row" id="row-mode">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#af52de;">${getIconSvg('palette', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Theme Mode</div>
+                    <div class="settings-row-desc">Light, dark, or automatic system theme</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="segmented-control" id="ctrl-mode">
+                    <button class="segmented-btn" data-mode="light">Light</button>
+                    <button class="segmented-btn" data-mode="dark">Dark</button>
+                    <button class="segmented-btn" data-mode="auto">Auto</button>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-row" id="row-accent">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#007aff;">${getIconSvg('droplet', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Accent Color</div>
+                    <div class="settings-row-desc">Highlight color for controls and selections</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="accent-swatches" id="ctrl-accent"></div>
+                </div>
+              </div>
+              <div class="settings-row" id="row-wallpaper">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#30b0c7;">${getIconSvg('image', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Wallpaper</div>
+                    <div class="settings-row-desc">Desktop background tone and wallpaper gradient</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="wallpaper-grid" id="ctrl-wallpaper"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card-wrap" id="card-wrap-terminal">
+            <div class="settings-card-label">Terminal</div>
+            <div class="settings-card" id="card-terminal">
+              <div class="settings-row" id="row-font">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#ff9500;">${getIconSvg('type', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Font Size</div>
+                    <div class="settings-row-desc">Console text size in pixels</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="settings-slider-wrap">
+                    <input type="range" class="settings-slider" id="ctrl-term-font" min="12" max="16" step="1" />
+                    <span id="label-term-font">13px</span>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-row" id="row-path">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#34c759;">${getIconSvg('terminal', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Show Path in Prompt</div>
+                    <div class="settings-row-desc">Display working directory in terminal prompt</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="ctrl-term-path" />
+                    <span class="toggle-track"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="settings-row" id="row-line-height">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#8e8e93;">${getIconSvg('alignLeft', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Line Height</div>
+                    <div class="settings-row-desc">Vertical spacing for terminal lines</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="settings-slider-wrap">
+                    <input type="range" class="settings-slider" id="ctrl-term-lh" min="1.3" max="1.8" step="0.1" />
+                    <span id="label-term-lh">1.5</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card-wrap" id="card-wrap-system">
+            <div class="settings-card-label">System</div>
+            <div class="settings-card" id="card-system">
+              <div class="settings-row" id="row-motion">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#ff3b30;">${getIconSvg('activity', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Motion</div>
+                    <div class="settings-row-desc">Window transition animations and effects</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="segmented-control" id="ctrl-motion">
+                    <button class="segmented-btn" data-motion="full">Full</button>
+                    <button class="segmented-btn" data-motion="reduced">Reduced</button>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-row" id="row-reset">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#8e8e93;">${getIconSvg('trash', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Reset to Defaults</div>
+                    <div class="settings-row-desc">Restore all preferences to system default values</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <button class="btn-modal btn-modal-cancel" id="btn-open-reset" style="border:1px solid var(--border-subtle);">Reset...</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-backdrop" id="modal-reset">
+          <div class="modal-box">
+            <div class="modal-title">Reset All Settings?</div>
+            <div class="modal-desc">Are you sure you want to restore all appearance and terminal settings to system defaults?</div>
+            <div class="modal-btns">
+              <button class="btn-modal btn-modal-cancel" id="btn-modal-cancel">Cancel</button>
+              <button class="btn-modal btn-modal-danger" id="btn-modal-confirm">Reset</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Build accent swatches
+      const accentContainer = container.querySelector('#ctrl-accent');
+      Object.keys(Accents).forEach(key => {
+        const acc = Accents[key];
+        const btn = document.createElement('button');
+        btn.className = 'accent-swatch';
+        btn.dataset.accent = key;
+        btn.style.backgroundColor = acc.hex;
+        btn.title = acc.name;
+        btn.addEventListener('click', () => { Settings.set('accent', key); });
+        accentContainer.appendChild(btn);
+      });
+
+      // Build wallpaper tiles
+      const wpContainer = container.querySelector('#ctrl-wallpaper');
+      Object.keys(Wallpapers).forEach(key => {
+        const wp = Wallpapers[key];
+        const tile = document.createElement('div');
+        tile.className = 'wallpaper-tile';
+        tile.dataset.wallpaper = key;
+        tile.style.background = wp.bg;
+        tile.title = wp.name;
+        tile.addEventListener('click', () => { Settings.set('wallpaper', key); });
+        wpContainer.appendChild(tile);
+      });
+
+      // Mode buttons
+      container.querySelectorAll('#ctrl-mode .segmented-btn').forEach(btn => {
+        btn.addEventListener('click', () => { Settings.set('mode', btn.dataset.mode); });
+      });
+
+      // Motion buttons
+      container.querySelectorAll('#ctrl-motion .segmented-btn').forEach(btn => {
+        btn.addEventListener('click', () => { Settings.set('motion', btn.dataset.motion); });
+      });
+
+      // Sliders & Toggles
+      const fontSlider = container.querySelector('#ctrl-term-font');
+      const fontLabel = container.querySelector('#label-term-font');
+      fontSlider.addEventListener('input', (e) => { Settings.set('termFontSize', e.target.value); });
+
+      const lhSlider = container.querySelector('#ctrl-term-lh');
+      const lhLabel = container.querySelector('#label-term-lh');
+      lhSlider.addEventListener('input', (e) => { Settings.set('termLineHeight', e.target.value); });
+
+      const pathCheckbox = container.querySelector('#ctrl-term-path');
+      pathCheckbox.addEventListener('change', (e) => { Settings.set('termShowPath', e.target.checked); });
+
+      // Modal reset handlers
+      const modal = container.querySelector('#modal-reset');
+      container.querySelector('#btn-open-reset').addEventListener('click', () => { modal.classList.add('open'); });
+      container.querySelector('#btn-modal-cancel').addEventListener('click', () => { modal.classList.remove('open'); });
+      container.querySelector('#btn-modal-confirm').addEventListener('click', () => {
+        Settings.reset();
+        modal.classList.remove('open');
+      });
+
+      // Sidebar navigation
+      const sectionInfo = {
+        appearance: { icon: 'palette', title: 'Appearance', subtitle: 'Customize the look and feel of WebOS', target: 'card-wrap-appearance' },
+        wallpaper: { icon: 'image', title: 'Wallpaper', subtitle: 'Choose a desktop background for WebOS', target: 'row-wallpaper' },
+        accent: { icon: 'droplet', title: 'Accent Color', subtitle: 'Select an accent color for controls and highlights', target: 'row-accent' },
+        font: { icon: 'type', title: 'Terminal Font', subtitle: 'Adjust terminal font size and typography line height', target: 'row-font' },
+        behavior: { icon: 'terminal', title: 'Terminal Behavior', subtitle: 'Configure prompt display and shell interaction', target: 'row-path' },
+        motion: { icon: 'activity', title: 'Motion', subtitle: 'Control window animations and motion speed', target: 'row-motion' },
+        reset: { icon: 'trash', title: 'System Reset', subtitle: 'Restore WebOS settings to system defaults', target: 'row-reset' }
+      };
+
+      const selectSection = (secKey) => {
+        const info = sectionInfo[secKey] || sectionInfo.appearance;
+        container.querySelectorAll('.settings-nav-row').forEach(row => {
+          row.classList.toggle('active', row.dataset.section === secKey);
+        });
+        const hdrIcon = container.querySelector('#settings-hdr-icon');
+        const hdrTitle = container.querySelector('#settings-hdr-title');
+        const hdrSub = container.querySelector('#settings-hdr-subtitle');
+        if (hdrIcon) hdrIcon.innerHTML = getIconSvg(info.icon, 48);
+        if (hdrTitle) hdrTitle.textContent = info.title;
+        if (hdrSub) hdrSub.textContent = info.subtitle;
+
+        const targetEl = container.querySelector('#' + info.target);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      };
+
+      container.querySelectorAll('.settings-nav-row').forEach(row => {
+        row.addEventListener('click', () => { selectSection(row.dataset.section); });
+      });
+
+      // Sync active state in UI
+      renderSettingsUi = () => {
+        const s = Settings.current;
+        container.querySelectorAll('#ctrl-mode .segmented-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mode === s.mode);
+        });
+        container.querySelectorAll('#ctrl-motion .segmented-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.motion === s.motion);
+        });
+        container.querySelectorAll('#ctrl-accent .accent-swatch').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.accent === s.accent);
+        });
+        container.querySelectorAll('#ctrl-wallpaper .wallpaper-tile').forEach(tile => {
+          tile.classList.toggle('active', tile.dataset.wallpaper === s.wallpaper);
+        });
+        if (fontSlider) fontSlider.value = s.termFontSize;
+        if (fontLabel) fontLabel.textContent = s.termFontSize + 'px';
+        if (lhSlider) lhSlider.value = s.termLineHeight || 1.5;
+        if (lhLabel) lhLabel.textContent = (s.termLineHeight || 1.5).toFixed(1);
+        if (pathCheckbox) pathCheckbox.checked = !!s.termShowPath;
+      };
+
+      renderSettingsUi();
+
+      WindowManager.createWindow({
+        title: 'Settings',
+        pid,
+        width: 620,
+        height: 460,
+        contentEl: container,
+        appKey: 'settings',
+        onClose: () => { renderSettingsUi = () => {}; }
+      });
+    }
+
+    // App 5: About Application
+    function launchAbout() {
+      const existing = WindowManager.windows.find(w => w.title === 'About');
+      if (existing) {
+        WindowManager.restore(existing.el);
+        return;
+      }
+
+      const pid = Kernel.spawn('about', 1, 14.0);
+      const container = document.createElement('div');
+      container.className = 'about-container';
+      container.innerHTML = `
+        <div class="about-logo">${getIconSvg('info', 28)}</div>
+        <div class="about-title">WebOS v5.1 (macOS Sequoia Edition)</div>
+        <p class="about-desc">A browser-based operating system simulation built with vanilla HTML, CSS, and JavaScript. Featuring macOS window chrome, Lucide SVG system, live pro theming, RR scheduler, and persistent VFS.</p>
+        <div class="about-meta">
+          <div><strong>Kernel:</strong> WebOS microkernel v5.1.0 (Preemptive RR)</div>
+          <div><strong>Shell:</strong> WebOS POSIX Shell with Streams (term-v5.1)</div>
+          <div><strong>Filesystem:</strong> Persistent Virtual In-Memory Tree</div>
+          <div><strong>Architecture:</strong> x86_64 Browser Virtual Machine</div>
+        </div>
+      `;
+      WindowManager.createWindow({ title: 'About', pid, width: 420, height: 320, contentEl: container, appKey: 'about' });
+    }
+
+    // --- 4. Boot Sequence & Initialization ---
+    const bootLines = [
+      "WebOS BIOS v0.5.1 (x86_64 Browser Emulation)",
+      "CPU: Virtual JS Engine @ 3.20GHz [1 core, 1 scheduler]",
+      "Memory check: 640K Base, 16384K Extended ... OK",
+      "Initializing persistent storage from localStorage ... OK",
+      "Loading theme configuration & user preferences ... OK",
+      "Starting process scheduler ... OK",
+      "Loading kernel image /boot/vmlinuz-webos ... OK",
+      "Mounting root filesystem (tmpfs / VFS) ... OK",
+      "Initializing stream pipeline architecture ... OK",
+      "Starting system services: udevd, syslogd, dbus ... OK",
+      "Launching userland display manager ... OK",
+      "Welcome to WebOS v5.1!"
+    ];
+
+    function startBootSequence() {
+      const bootScreen = document.getElementById('boot-screen');
+      const bootLog = document.getElementById('boot-log');
+      const desktop = document.getElementById('desktop');
+      let lineIdx = 0;
+
+      function printNextLine() {
+        if (lineIdx < bootLines.length) {
+          const lineEl = document.createElement('div');
+          lineEl.className = 'boot-line';
+          lineEl.textContent = bootLines[lineIdx++];
+          bootLog.appendChild(lineEl);
+          setTimeout(printNextLine, 180);
+        } else {
+          setTimeout(() => {
+            bootScreen.classList.add('fade-out');
+            desktop.classList.add('loaded');
+            setTimeout(() => { bootScreen.style.display = 'none'; }, 450);
+            initOperatingSystem();
+          }, 300);
+        }
+      }
+      printNextLine();
+    }
+
+    function initOperatingSystem() {
+      Settings.load();
+      Kernel.fs.load();
+      Kernel.spawn('kernel', 5, 32.0, '/');
+      Kernel.spawn('shell', 3, 16.0, '/home/user');
+      Kernel.scheduler.start();
+
+      // Populate Desktop & Taskbar Icons with SVGs
+      [
+        ['terminal', 'terminal'], ['taskmgr', 'activity'], ['kernellog', 'log'],
+        ['settings', 'settings'], ['about', 'info']
+      ].forEach(([app, icon]) => {
+        const d = document.getElementById('icon-sym-' + app);
+        if (d) d.innerHTML = getIconSvg(icon, 24);
+        const t = document.getElementById('tb-icon-' + app);
+        if (t) t.innerHTML = getIconSvg(icon, 18);
+      });
+
+      const clockEl = document.getElementById('taskbar-clock');
+      const updateClock = () => { clockEl.textContent = (new Date()).toTimeString().slice(0, 5); };
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      const appLaunchers = { terminal: launchTerminal, taskmgr: launchTaskManager, kernellog: launchKernelLog, settings: launchSettings, about: launchAbout };
+      Object.entries(appLaunchers).forEach(([app, fn]) => {
+        const d = document.getElementById('icon-' + app);
+        if (d) d.addEventListener('click', fn);
+        const t = document.getElementById('taskbar-btn-' + app);
+        if (t) t.addEventListener('click', () => {
+          const w = WindowManager.windows.find(x => x.appKey === app);
+          if (w && w.el.style.display === 'none') {
+            WindowManager.restore(w.el);
+          } else {
+            fn();
+          }
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', startBootSequence);
+  </script>
+</body>
+</html>
