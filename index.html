@@ -1,18 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-motion="full">
+<html lang="en" data-theme="dark" data-motion="full" data-mts-mode="dark" data-mts-accent="violet">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebOS v5</title>
+  <title>WebOS v6.2</title>
+  <!-- Matios UI Zero-Build Framework (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.css">
+  <link id="mts-accent-link" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/themes/matios-ui-accent-violet.css">
+  <script src="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.js"></script>
   <style>
-    /* CSS Variables & Design Tokens (macOS Sequoia) */
+    /* CSS Variables & Design Tokens (macOS Sequoia & Golden Gate) */
     :root {
       --accent: #0a84ff; --accent-rgb: 10, 132, 255;
+      --glass-opacity: 0.8;
       --bg-desktop: radial-gradient(circle at 50% 30%, #1e2640 0%, #0d111a 60%, #06080d 100%);
-      --bg-window: #1e1e24; --bg-titlebar: rgba(30, 30, 36, 0.72); --bg-content: #141418;
+      --bg-window: #1e1e24; --bg-titlebar: rgba(30, 30, 36, var(--glass-opacity)); --bg-content: #141418;
       --text-main: #f1f2f6; --text-muted: #8e909a;
       --border-subtle: rgba(255, 255, 255, 0.08); --border-titlebar: rgba(255, 255, 255, 0.08);
-      --taskbar-bg: rgba(22, 22, 26, 0.72); --taskbar-border: rgba(255, 255, 255, 0.08);
+      --taskbar-bg: rgba(22, 22, 26, var(--glass-opacity)); --taskbar-border: rgba(255, 255, 255, 0.08);
       --window-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
       --window-shadow-focused: 0 26px 56px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(var(--accent-rgb), 0.22);
       --term-bg: #111215; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
@@ -23,10 +28,10 @@
 
     [data-theme="light"] {
       --bg-desktop: linear-gradient(135deg, #d8e2ec 0%, #b8c8d8 50%, #9cb0c5 100%);
-      --bg-window: #f5f5f7; --bg-titlebar: rgba(245, 245, 247, 0.78); --bg-content: #ffffff;
+      --bg-window: #f5f5f7; --bg-titlebar: rgba(245, 245, 247, var(--glass-opacity)); --bg-content: #ffffff;
       --text-main: #1d1d1f; --text-muted: #86868b;
       --border-subtle: rgba(0, 0, 0, 0.08); --border-titlebar: rgba(0, 0, 0, 0.06);
-      --taskbar-bg: rgba(255, 255, 255, 0.72); --taskbar-border: rgba(0, 0, 0, 0.08);
+      --taskbar-bg: rgba(255, 255, 255, var(--glass-opacity)); --taskbar-border: rgba(0, 0, 0, 0.08);
       --window-shadow: 0 18px 40px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
       --window-shadow-focused: 0 24px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(var(--accent-rgb), 0.28);
       --term-bg: #1c1d22; --term-fg: #e6e6e6; --term-prompt: #7ee787; --term-error: #ff7b72;
@@ -77,7 +82,7 @@
       .window.window-minimizing { opacity: 0; transform: none !important; transition: opacity 100ms ease !important; }
     }
 
-    .titlebar { height: 38px; background: var(--bg-titlebar); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border-titlebar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: grab; }
+    .titlebar { height: 38px; background: var(--bg-titlebar); backdrop-filter: blur(calc(24px * var(--glass-opacity))) saturate(180%); border-bottom: 1px solid var(--border-titlebar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: grab; }
     .titlebar:active { cursor: grabbing; }
     .traffic-lights { display: flex; gap: 8px; align-items: center; width: 68px; }
     .traffic-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: none; outline: none; display: flex; align-items: center; justify-content: center; position: relative; }
@@ -189,7 +194,7 @@
     .about-meta { width: 100%; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; font-size: 11px; text-align: left; line-height: 1.8; color: var(--text-muted); font-family: var(--font-mono); }
 
     /* 9. Taskbar */
-    #taskbar { position: fixed; bottom: 0; left: 0; right: 0; height: 44px; background: var(--taskbar-bg); backdrop-filter: blur(30px) saturate(180%); border-top: 1px solid var(--taskbar-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 9999; }
+    #taskbar { position: fixed; bottom: 0; left: 0; right: 0; height: 44px; background: var(--taskbar-bg); backdrop-filter: blur(calc(30px * var(--glass-opacity))) saturate(180%); border-top: 1px solid var(--taskbar-border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 9999; }
     .taskbar-left { display: flex; align-items: center; gap: 6px; }
     .taskbar-btn { width: 36px; height: 36px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; background: transparent; border: none; color: var(--text-main); cursor: pointer; transition: transform 140ms ease-out, background 140ms ease-out; position: relative; }
     .taskbar-btn:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.06); }
@@ -197,6 +202,69 @@
     .taskbar-dot { position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); display: none; opacity: 0; transform: translateY(0); transition: opacity 160ms ease-out, transform 160ms ease-out; }
     .taskbar-dot.active { display: block; opacity: 1; transform: translateY(-2px); }
     #taskbar-clock { font-size: 12px; font-weight: 500; color: var(--text-main); font-variant-numeric: tabular-nums; }
+
+    /* 10. File Manager & Matios UI Component Styles */
+    .files-container { display: flex; flex-direction: column; height: 100%; background: var(--bg-content); position: relative; overflow: hidden; }
+    .files-toolbar { height: 38px; min-height: 38px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-titlebar); backdrop-filter: blur(calc(20px * var(--glass-opacity))); gap: 8px; user-select: none; }
+    .files-toolbar-nav { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .files-nav-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; background: rgba(128,128,128,0.12); border: 1px solid var(--border-subtle); color: var(--text-main); transition: background 120ms; padding: 0; }
+    .files-nav-btn:hover { background: rgba(128,128,128,0.22); }
+    .files-nav-btn:disabled { opacity: 0.35; cursor: default; }
+    .files-breadcrumbs { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+    .files-crumb { cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 120ms; }
+    .files-crumb:hover { background: rgba(128,128,128,0.15); color: var(--text-main); }
+    .files-crumb.active { color: var(--text-main); font-weight: 600; }
+    .files-crumb-sep { opacity: 0.5; font-size: 11px; }
+    .files-toolbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .files-search-wrap { position: relative; width: 130px; }
+    .files-search-icon { position: absolute; left: 8px; top: 7px; color: var(--text-muted); pointer-events: none; }
+    .files-search-input { width: 100%; height: 26px; border-radius: 6px; background: rgba(128,128,128,0.08); border: 1px solid var(--border-subtle); color: var(--text-main); font-size: 11px; padding: 0 8px 0 24px; outline: none; box-sizing: border-box; }
+    .files-body { flex: 1; display: flex; overflow: hidden; }
+    .files-sidebar { width: 180px; min-width: 180px; background: var(--bg-window); border-right: 1px solid rgba(128,128,128,0.12); padding: 10px 8px; display: flex; flex-direction: column; overflow-y: auto; user-select: none; }
+    .files-sidebar-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding: 4px 6px; margin-top: 10px; }
+    .files-sidebar-section:first-child { margin-top: 0; }
+    .files-sidebar-row { height: 26px; border-radius: 6px; padding: 0 8px; display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: var(--text-main); transition: background 120ms; }
+    .files-sidebar-row:hover { background: rgba(255,255,255,0.04); }
+    [data-theme="light"] .files-sidebar-row:hover { background: rgba(0,0,0,0.03); }
+    .files-sidebar-row.active { background: rgba(var(--accent-rgb), 0.16); color: var(--accent); font-weight: 500; }
+    .files-content { flex: 1; padding: 14px; overflow-y: auto; position: relative; }
+    .files-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 13px; gap: 8px; }
+    .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 12px; align-content: flex-start; }
+    .files-grid-item { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 8px 4px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: background 120ms, border-color 120ms; }
+    .files-grid-item:hover { background: rgba(255,255,255,0.05); }
+    [data-theme="light"] .files-grid-item:hover { background: rgba(0,0,0,0.04); }
+    .files-grid-item.selected { background: rgba(var(--accent-rgb), 0.16); border-color: rgba(var(--accent-rgb), 0.35); }
+    .files-grid-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; color: var(--accent); }
+    .files-grid-label { font-size: 11px; word-break: break-word; max-width: 84px; line-height: 1.3; color: var(--text-main); }
+    .files-list-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    .files-list-table th { padding: 6px 10px; color: var(--text-muted); font-size: 11px; font-weight: 500; border-bottom: 1px solid var(--border-subtle); }
+    .files-list-table td { padding: 6px 10px; border-bottom: 1px solid rgba(128,128,128,0.06); color: var(--text-main); }
+    .files-list-table tr { cursor: pointer; }
+    .files-list-table tr:hover td { background: rgba(255,255,255,0.03); }
+    [data-theme="light"] .files-list-table tr:hover td { background: rgba(0,0,0,0.02); }
+    .files-list-table tr.selected td { background: rgba(var(--accent-rgb), 0.15); }
+    .files-list-name-cell { display: flex; align-items: center; gap: 8px; }
+    .files-rename-input { width: 100%; font-size: 11px; background: var(--bg-window); border: 1px solid var(--accent); border-radius: 4px; color: var(--text-main); padding: 2px 4px; text-align: center; outline: none; }
+    .files-toast { position: absolute; bottom: 14px; right: 14px; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 14px; font-size: 11px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 180ms ease; z-index: 100; color: var(--text-main); }
+    .files-toast.show { opacity: 1; pointer-events: auto; }
+    .mts-ctx-menu { position: fixed; background: var(--bg-window); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 4px; box-shadow: 0 10px 28px rgba(0,0,0,0.45); z-index: 99999; min-width: 150px; user-select: none; }
+    .mts-ctx-menu__item { padding: 6px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-main); transition: background 100ms; }
+    .mts-ctx-menu__item:hover { background: var(--accent); color: #fff; }
+    .mts-ctx-menu__item--danger { color: #ff453a; }
+    .mts-ctx-menu__item--danger:hover { background: #ff453a; color: #fff; }
+    .mts-ctx-menu__separator { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+    .mts-btn { border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; padding: 4px 10px; border: 1px solid var(--border-subtle); background: rgba(128,128,128,0.12); color: var(--text-main); transition: background 120ms, border-color 120ms; outline: none; display: inline-flex; align-items: center; gap: 4px; }
+    .mts-btn:hover { background: rgba(128,128,128,0.22); }
+    .mts-btn--secondary { background: rgba(128,128,128,0.1); }
+    .mts-btn--danger { background: #ff3b30; color: #fff; border-color: #ff3b30; }
+    .mts-btn--danger:hover { background: #e0352b; }
+    .mts-btn--primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .mts-btn-group { display: inline-flex; background: rgba(128,128,128,0.14); border-radius: 6px; padding: 2px; gap: 2px; }
+    .mts-btn-group .mts-btn { background: transparent; border: none; padding: 4px 10px; border-radius: 4px; }
+    .mts-btn-group .mts-btn.active, .mts-btn-group .mts-btn--active { background: var(--accent); color: #fff; }
+    .mts-slider-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px; }
+    .mts-slider { width: 90px; accent-color: var(--accent); cursor: pointer; }
+    .mts-toggle-wrap { display: inline-flex; align-items: center; }
   </style>
 </head>
 <body>
@@ -213,6 +281,10 @@
       <div class="desktop-icon" id="icon-terminal" title="Terminal">
         <div class="icon-symbol" id="icon-sym-terminal"></div>
         <span class="icon-title">Terminal</span>
+      </div>
+      <div class="desktop-icon" id="icon-files" title="Files">
+        <div class="icon-symbol" id="icon-sym-files"></div>
+        <span class="icon-title">Files</span>
       </div>
       <div class="desktop-icon" id="icon-taskmgr" title="Task Manager">
         <div class="icon-symbol" id="icon-sym-taskmgr"></div>
@@ -239,6 +311,10 @@
     <div class="taskbar-left">
       <button class="taskbar-btn" id="taskbar-btn-terminal" title="Terminal">
         <div class="taskbar-icon-wrap" id="tb-icon-terminal"></div>
+        <span class="taskbar-dot"></span>
+      </button>
+      <button class="taskbar-btn" id="taskbar-btn-files" title="Files">
+        <div class="taskbar-icon-wrap" id="tb-icon-files"></div>
         <span class="taskbar-dot"></span>
       </button>
       <button class="taskbar-btn" id="taskbar-btn-taskmgr" title="Task Manager">
@@ -295,13 +371,24 @@
       image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>',
       droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>',
       type: '<polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line>',
-      alignLeft: '<line x1="21" x2="3" y1="6" y2="6"></line><line x1="15" x2="3" y1="12" y2="12"></line><line x1="17" x2="3" y1="18" y2="18"></line>'
+      alignLeft: '<line x1="21" x2="3" y1="6" y2="6"></line><line x1="15" x2="3" y1="12" y2="12"></line><line x1="17" x2="3" y1="18" y2="18"></line>',
+      grid: '<rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect>',
+      list: '<line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line>',
+      copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>',
+      chevronLeft: '<polyline points="15 18 9 12 15 6"></polyline>',
+      chevronRight: '<polyline points="9 18 15 12 9 6"></polyline>',
+      home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>',
+      monitor: '<rect width="20" height="14" x="2" y="3" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>',
+      hardDrive: '<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>'
     };
 
     function getIconSvg(name, size = 16, className = '') {
       const content = Icons[name] || '';
       return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${content}</svg>`;
     }
+
+    const escapeHtml = str => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     const Accents = {
       blue: { hex: '#0a84ff', rgb: '10, 132, 255', name: 'Blue' },
@@ -329,6 +416,7 @@
         accent: 'blue',
         wallpaper: 'sequoia-dark',
         motion: 'full',
+        glassOpacity: 0.8,
         termFontSize: 13,
         termShowPath: true,
         termLineHeight: 1.5
@@ -364,10 +452,25 @@
         }
         root.setAttribute('data-theme', effectiveMode);
         root.setAttribute('data-motion', this.current.motion);
+        root.setAttribute('data-mts-mode', effectiveMode);
 
         const acc = Accents[this.current.accent] || Accents.blue;
         root.style.setProperty('--accent', acc.hex);
         root.style.setProperty('--accent-rgb', acc.rgb);
+
+        const mtsAccentMap = {
+          blue: 'blue', purple: 'violet', pink: 'rose', red: 'crimson',
+          orange: 'orange', yellow: 'bronze', green: 'emerald', graphite: 'slate'
+        };
+        const mtsAcc = mtsAccentMap[this.current.accent] || 'blue';
+        root.setAttribute('data-mts-accent', mtsAcc);
+        const linkEl = document.getElementById('mts-accent-link');
+        if (linkEl) {
+          linkEl.href = `https://cdn.jsdelivr.net/npm/@matios/ui/themes/matios-ui-accent-${mtsAcc}.css`;
+        }
+
+        const glass = this.current.glassOpacity !== undefined ? this.current.glassOpacity : 0.8;
+        root.style.setProperty('--glass-opacity', glass);
 
         const wp = Wallpapers[this.current.wallpaper] || Wallpapers['sequoia-dark'];
         root.style.setProperty('--bg-desktop', wp.bg);
@@ -391,6 +494,10 @@
         } else if (key === 'motion') {
           if (!['full', 'reduced'].includes(val)) throw new Error('motion must be full or reduced');
           this.current.motion = val;
+        } else if (key === 'glassOpacity') {
+          const g = parseFloat(val);
+          if (isNaN(g) || g < 0 || g > 1) throw new Error('glassOpacity must be 0.0-1.0');
+          this.current.glassOpacity = +(g.toFixed(2));
         } else if (key === 'termFontSize') {
           const s = parseInt(val, 10);
           if (isNaN(s) || s < 12 || s > 16) throw new Error('termFontSize must be 12-16');
@@ -532,7 +639,9 @@
           if (!parentInfo) throw new Error('parent directory not found');
           const { parentNode, name } = parentInfo;
           if (parentNode.children[name]) throw new Error(`file or directory already exists: '${name}'`);
-          parentNode.children[name] = { type: 'dir', name, children: {} };
+          const now = Date.now();
+          parentNode.children[name] = { type: 'dir', name, mtime: now, children: {} };
+          parentNode.mtime = now;
           this.save();
         },
 
@@ -541,7 +650,9 @@
           if (!parentInfo) throw new Error('parent directory not found');
           const { parentNode, name } = parentInfo;
           if (parentNode.children[name]) throw new Error(`file or directory already exists: '${name}'`);
-          parentNode.children[name] = { type: 'file', name, content: String(content) };
+          const now = Date.now();
+          parentNode.children[name] = { type: 'file', name, mtime: now, content: String(content) };
+          parentNode.mtime = now;
           this.save();
         },
 
@@ -550,6 +661,7 @@
           if (!node) throw new Error(`no such file: '${path}'`);
           if (node.type !== 'file') throw new Error(`not a file: '${path}'`);
           node.content = String(content);
+          node.mtime = Date.now();
           this.save();
         },
 
@@ -567,7 +679,68 @@
           return Object.keys(node.children);
         },
 
-        remove(path, cwd = '/') {
+        stat(path, cwd = '/') {
+          const canonical = this.normalize(path, cwd);
+          const node = this.resolve(canonical, '/');
+          if (!node) throw new Error(`no such file or directory: '${path}'`);
+          const size = node.type === 'file' ? (node.content ? node.content.length : 0) : (node.children ? Object.keys(node.children).length : 0);
+          return {
+            name: node.name || '/',
+            type: node.type,
+            size,
+            mtime: node.mtime || Date.now(),
+            path: canonical
+          };
+        },
+
+        rename(path, newName, cwd = '/') {
+          if (!newName || newName.includes('/') || newName.trim() === '') throw new Error('invalid target name');
+          const parentInfo = this.resolveParent(path, cwd);
+          if (!parentInfo) throw new Error(`cannot rename '${path}'`);
+          const { parentNode, name } = parentInfo;
+          const target = parentNode.children[name];
+          if (!target) throw new Error(`no such file or directory: '${path}'`);
+          if (parentNode.children[newName]) throw new Error(`target '${newName}' already exists`);
+          target.name = newName;
+          target.mtime = Date.now();
+          delete parentNode.children[name];
+          parentNode.children[newName] = target;
+          parentNode.mtime = Date.now();
+          this.save();
+        },
+
+        duplicate(path, cwd = '/') {
+          const parentInfo = this.resolveParent(path, cwd);
+          if (!parentInfo) throw new Error(`cannot duplicate '${path}'`);
+          const { parentNode, name } = parentInfo;
+          const target = parentNode.children[name];
+          if (!target) throw new Error(`no such file or directory: '${path}'`);
+          let baseName = name, ext = '';
+          if (target.type === 'file' && name.includes('.')) {
+            const idx = name.lastIndexOf('.');
+            baseName = name.slice(0, idx);
+            ext = name.slice(idx);
+          }
+          let copyName = `${baseName} copy${ext}`;
+          let c = 2;
+          while (parentNode.children[copyName]) {
+            copyName = `${baseName} copy ${c}${ext}`;
+            c++;
+          }
+          const cloneNode = (n, nName) => {
+            const now = Date.now();
+            if (n.type === 'file') return { type: 'file', name: nName, content: n.content, mtime: now };
+            const ch = {};
+            for (const [k, v] of Object.entries(n.children || {})) ch[k] = cloneNode(v, k);
+            return { type: 'dir', name: nName, children: ch, mtime: now };
+          };
+          parentNode.children[copyName] = cloneNode(target, copyName);
+          parentNode.mtime = Date.now();
+          this.save();
+          return copyName;
+        },
+
+        remove(path, cwd = '/', recursive = false) {
           const canonical = this.normalize(path, cwd);
           if (canonical === '/') throw new Error('cannot remove root directory');
           const parentInfo = this.resolveParent(path, cwd);
@@ -575,15 +748,16 @@
           const { parentNode, name } = parentInfo;
           const target = parentNode.children[name];
           if (!target) throw new Error(`no such file or directory: '${path}'`);
-          if (target.type === 'dir' && Object.keys(target.children).length > 0) {
+          if (target.type === 'dir' && Object.keys(target.children).length > 0 && !recursive) {
             throw new Error(`directory not empty: '${name}'`);
           }
           delete parentNode.children[name];
+          parentNode.mtime = Date.now();
           this.save();
         },
 
         wipe() {
-          this.root = { type: 'dir', name: '', children: {} };
+          this.root = { type: 'dir', name: '', mtime: Date.now(), children: {} };
           this.save();
         },
 
@@ -600,6 +774,25 @@
               const parsed = JSON.parse(raw);
               if (parsed && parsed.type === 'dir' && parsed.children && Object.keys(parsed.children).length > 0) {
                 this.root = parsed;
+                // Auto-migrate: ensure mtime on all nodes
+                const migrate = (n) => {
+                  if (!n) return;
+                  if (!n.mtime) n.mtime = Date.now();
+                  if (n.type === 'dir' && n.children) {
+                    for (const ch of Object.values(n.children)) migrate(ch);
+                  }
+                };
+                migrate(this.root);
+                // Ensure default user folders exist
+                const userNode = this.resolve('/home/user', '/');
+                if (userNode && userNode.type === 'dir') {
+                  ['Desktop', 'Documents', 'Downloads'].forEach(dir => {
+                    if (!userNode.children[dir]) {
+                      userNode.children[dir] = { type: 'dir', name: dir, mtime: Date.now(), children: {} };
+                    }
+                  });
+                }
+                this.save();
                 return;
               }
             }
@@ -609,18 +802,28 @@
         },
 
         createDefaultTree() {
+          const now = Date.now();
           return {
-            type: 'dir', name: '',
+            type: 'dir', name: '', mtime: now,
             children: {
-              bin: { type: 'dir', name: 'bin', children: {} },
-              etc: { type: 'dir', name: 'etc', children: {} },
-              tmp: { type: 'dir', name: 'tmp', children: {} },
+              bin: { type: 'dir', name: 'bin', mtime: now, children: {} },
+              etc: { type: 'dir', name: 'etc', mtime: now, children: {} },
+              tmp: { type: 'dir', name: 'tmp', mtime: now, children: {} },
               home: {
-                type: 'dir', name: 'home',
-                children: { user: { type: 'dir', name: 'user', children: {} } }
+                type: 'dir', name: 'home', mtime: now,
+                children: {
+                  user: {
+                    type: 'dir', name: 'user', mtime: now,
+                    children: {
+                      Desktop: { type: 'dir', name: 'Desktop', mtime: now, children: {} },
+                      Documents: { type: 'dir', name: 'Documents', mtime: now, children: {} },
+                      Downloads: { type: 'dir', name: 'Downloads', mtime: now, children: {} }
+                    }
+                  }
+                }
               },
               'README.txt': {
-                type: 'file', name: 'README.txt',
+                type: 'file', name: 'README.txt', mtime: now,
                 content: 'Welcome to WebOS.\nThis is your virtual filesystem.'
               }
             }
@@ -683,7 +886,7 @@
       cascadeOffset: 0,
 
       updateTaskbarDots() {
-        const apps = ['terminal', 'taskmgr', 'kernellog', 'settings', 'about'];
+        const apps = ['terminal', 'files', 'taskmgr', 'kernellog', 'settings', 'about'];
         apps.forEach(app => {
           const btn = document.getElementById('taskbar-btn-' + app);
           if (!btn) return;
@@ -863,7 +1066,7 @@
       help: {
         run() {
           return {
-            stdout: 'Available commands:\n  help                     - display list of commands\n  history                  - display command history\n  ps                       - report process status & real CPU%\n  sched                    - display scheduler statistics\n  queue                    - display scheduler weighted pool\n  nice <pid> <prio>        - adjust process priority (1-5)\n  kill <pid>               - terminate a process\n  log                      - open Kernel Log window\n  pwd                      - print working directory\n  cd <path>                - change directory\n  ls [path]                - list directory contents\n  mkdir <name>             - create directory\n  touch <name>             - create empty file\n  cat [file...]            - concatenate files or print stdin\n  write <file> <text...>   - overwrite existing file with text\n  rm <path>                - remove file or empty directory\n  tree [path]              - display directory tree structure\n  grep <pattern> [file]    - filter lines matching pattern\n  head [-n N] [file]       - print first N lines (default 10)\n  tail [-n N] [file]       - print last N lines (default 10)\n  wc [file]                - count lines, words, and characters\n  sort [file]              - sort lines alphabetically\n  uniq [file]              - filter adjacent duplicate lines\n  true                     - return success (exit 0)\n  false                    - return failure (exit 1)\n  echo [-e] <text...>      - display line of text\n  date                     - print system date and time\n  whoami                   - print effective user name\n  theme [subcmd...]        - view, export, or set system theme\n  settings                 - open System Settings window\n  clear                    - clear terminal screen',
+            stdout: 'Available commands:\n  help                     - display list of commands\n  history                  - display command history\n  ps                       - report process status & real CPU%\n  sched                    - display scheduler statistics\n  queue                    - display scheduler weighted pool\n  nice <pid> <prio>        - adjust process priority (1-5)\n  kill <pid>               - terminate a process\n  log                      - open Kernel Log window\n  pwd                      - print working directory\n  cd <path>                - change directory\n  ls [path]                - list directory contents\n  mkdir <name>             - create directory\n  touch <name>             - create empty file\n  cat [file...]            - concatenate files or print stdin\n  write <file> <text...>   - overwrite existing file with text\n  stat <path>              - display file or directory status\n  rm [-r|-rf] <path>       - remove file or directory\n  files [path]             - open File Manager window\n  tree [path]              - display directory tree structure\n  grep <pattern> [file]    - filter lines matching pattern\n  head [-n N] [file]       - print first N lines (default 10)\n  tail [-n N] [file]       - print last N lines (default 10)\n  wc [file]                - count lines, words, and characters\n  sort [file]              - sort lines alphabetically\n  uniq [file]              - filter adjacent duplicate lines\n  true                     - return success (exit 0)\n  false                    - return failure (exit 1)\n  echo [-e] <text...>      - display line of text\n  date                     - print system date and time\n  whoami                   - print effective user name\n  theme [subcmd...]        - view, export, save, load, or set system theme\n  settings                 - open System Settings window\n  clear                    - clear terminal screen',
             code: 0
           };
         }
@@ -943,13 +1146,58 @@
 
       rm: {
         run(args, stdin, ctx) {
-          if (!args[0]) return { stderr: 'missing operand', code: 1 };
+          if (!args[0]) return { stderr: 'usage: rm [-r|-rf] <path...>', code: 1 };
+          let recursive = false;
+          const targets = [];
+          for (const a of args) {
+            if (a === '-r' || a === '-rf' || a === '-R' || a === '-f') recursive = true;
+            else targets.push(a);
+          }
+          if (targets.length === 0) return { stderr: 'usage: rm [-r|-rf] <path...>', code: 1 };
+          for (const target of targets) {
+            const canonical = Kernel.fs.normalize(target, ctx.proc.cwd);
+            if (canonical === '/') {
+              return { stderr: 'rm: it is dangerous to operate recursively on /\nrm: use --no-preserve-root to override failsafe', code: 1 };
+            }
+            try {
+              Kernel.fs.remove(target, ctx.proc.cwd, recursive);
+            } catch (e) {
+              return { stderr: e.message, code: 1 };
+            }
+          }
+          return { code: 0 };
+        }
+      },
+
+      stat: {
+        run(args, stdin, ctx) {
+          if (!args[0]) return { stderr: 'usage: stat <path>', code: 1 };
           try {
-            Kernel.fs.remove(args[0], ctx.proc.cwd);
-            return { code: 0 };
+            let info;
+            try {
+              info = Kernel.fs.stat(args.join(' '), ctx.proc.cwd);
+            } catch (e) {
+              info = Kernel.fs.stat(args[0], ctx.proc.cwd);
+            }
+            const d = new Date(info.mtime).toISOString().replace('T', ' ').slice(0, 19);
+            const out = [
+              `  File: ${info.path}`,
+              `  Type: ${info.type === 'dir' ? 'directory' : 'regular file'}`,
+              `  Size: ${info.size} bytes`,
+              `Modify: ${d}`
+            ].join('\n');
+            return { stdout: out, code: 0 };
           } catch (e) {
             return { stderr: e.message, code: 1 };
           }
+        }
+      },
+
+      files: {
+        run(args, stdin, ctx) {
+          const p = args[0] ? Kernel.fs.normalize(args[0], ctx.proc.cwd) : ctx.proc.cwd;
+          launchFiles(p);
+          return { code: 0 };
         }
       },
 
@@ -1196,7 +1444,7 @@
       whoami: { run() { return { stdout: 'user', code: 0 }; } },
 
       theme: {
-        run(args) {
+        run(args, stdin, ctx) {
           const sub = args[0] ? args[0].toLowerCase() : '';
           if (!sub) {
             const s = Settings.current;
@@ -1206,13 +1454,104 @@
               `  Accent:         ${s.accent} (${(Accents[s.accent] || {}).hex || ''})`,
               `  Wallpaper:      ${s.wallpaper}`,
               `  Motion:         ${s.motion}`,
+              `  Glass Opacity:  ${s.glassOpacity ?? 0.8}`,
               `  Term Font Size: ${s.termFontSize}px`,
+              `  Term Line Height: ${s.termLineHeight || 1.5}`,
               `  Term Show Path: ${s.termShowPath}`
             ];
             return { stdout: lines.join('\n'), code: 0 };
           }
           if (sub === 'export') {
-            return { stdout: JSON.stringify(Settings.current, null, 2), code: 0 };
+            const s = Settings.current;
+            const exp = {
+              version: '6.2',
+              mode: s.mode,
+              accent: s.accent,
+              wallpaper: s.wallpaper,
+              motion: s.motion,
+              glassOpacity: s.glassOpacity ?? 0.8,
+              termFontSize: s.termFontSize,
+              termLineHeight: s.termLineHeight || 1.5,
+              termShowPath: !!s.termShowPath
+            };
+            return { stdout: JSON.stringify(exp, null, 2), code: 0 };
+          }
+          if (sub === 'save') {
+            const name = args[1];
+            if (!name) return { stderr: 'usage: theme save <name>', code: 1 };
+            const docDir = '/home/user/Documents';
+            try {
+              if (!Kernel.fs.resolve(docDir, '/')) {
+                Kernel.fs.mkdir(docDir, '/');
+              }
+            } catch (e) {}
+            const s = Settings.current;
+            const themeData = {
+              version: '6.2',
+              name,
+              mode: s.mode,
+              accent: s.accent,
+              wallpaper: s.wallpaper,
+              motion: s.motion,
+              glassOpacity: s.glassOpacity ?? 0.8,
+              termFontSize: s.termFontSize,
+              termLineHeight: s.termLineHeight || 1.5,
+              termShowPath: !!s.termShowPath
+            };
+            const filename = `webos-theme-${name}.json`;
+            const targetFile = `${docDir}/${filename}`;
+            const jsonStr = JSON.stringify(themeData, null, 2);
+            try {
+              if (Kernel.fs.resolve(targetFile, '/')) {
+                Kernel.fs.write(targetFile, '/', jsonStr);
+              } else {
+                Kernel.fs.touch(targetFile, '/', jsonStr);
+              }
+              return { stdout: `Saved theme '${name}' to ${targetFile}`, code: 0 };
+            } catch (e) {
+              return { stderr: `Failed to save theme: ${e.message}`, code: 1 };
+            }
+          }
+          if (sub === 'load') {
+            const p = args[1];
+            if (!p) return { stderr: 'usage: theme load <path>', code: 1 };
+            try {
+              const content = Kernel.fs.read(p, ctx.proc.cwd);
+              const data = JSON.parse(content);
+              if (data.mode) Settings.set('mode', data.mode);
+              if (data.accent) Settings.set('accent', data.accent);
+              if (data.wallpaper) Settings.set('wallpaper', data.wallpaper);
+              if (data.motion) Settings.set('motion', data.motion);
+              if (data.glassOpacity !== undefined) Settings.set('glassOpacity', data.glassOpacity);
+              if (data.termFontSize !== undefined) Settings.set('termFontSize', data.termFontSize);
+              if (data.termLineHeight !== undefined) Settings.set('termLineHeight', data.termLineHeight);
+              if (data.termShowPath !== undefined) Settings.set('termShowPath', data.termShowPath);
+              return { stdout: `Successfully loaded theme from ${p}`, code: 0 };
+            } catch (e) {
+              return { stderr: `Failed to load theme: ${e.message}`, code: 1 };
+            }
+          }
+          if (sub === 'list') {
+            const docDir = '/home/user/Documents';
+            const docNode = Kernel.fs.resolve(docDir, '/');
+            if (!docNode || docNode.type !== 'dir') {
+              return { stdout: 'No saved themes found in ' + docDir, code: 0 };
+            }
+            const files = Object.keys(docNode.children).filter(f => f.startsWith('webos-theme-') && f.endsWith('.json')).sort();
+            if (files.length === 0) {
+              return { stdout: 'No saved themes found in ' + docDir, code: 0 };
+            }
+            const lines = [`Saved Themes in ${docDir}:`];
+            for (const f of files) {
+              try {
+                const parsed = JSON.parse(docNode.children[f].content);
+                const tname = parsed.name || f.replace('webos-theme-', '').replace('.json', '');
+                lines.push(`  - ${tname} (${f}): mode=${parsed.mode || '-'}, accent=${parsed.accent || '-'}, glassOpacity=${parsed.glassOpacity ?? '-'}`);
+              } catch (e) {
+                lines.push(`  - ${f}`);
+              }
+            }
+            return { stdout: lines.join('\n'), code: 0 };
           }
           if (sub === 'reset') {
             Settings.reset();
@@ -1233,7 +1572,7 @@
               return { stderr: e.message, code: 1 };
             }
           }
-          return { stderr: 'usage: theme [export | reset | set <key> <val> | dark | light | auto]', code: 1 };
+          return { stderr: 'usage: theme [save <name> | load <path> | list | export | reset | set <key> <val> | dark | light | auto]', code: 1 };
         }
       },
 
@@ -1660,7 +1999,7 @@
         <div class="settings-sidebar">
           <div class="settings-search-wrap">
             <span class="settings-search-icon">${getIconSvg('search', 13)}</span>
-            <input class="settings-search-input" placeholder="Search" disabled />
+            <input class="settings-search-input mts-input" placeholder="Search" disabled />
           </div>
           <div class="settings-group-header">Appearance</div>
           <div class="settings-nav-row active" data-section="appearance">
@@ -1674,6 +2013,10 @@
           <div class="settings-nav-row" data-section="accent">
             <span class="settings-nav-icon">${getIconSvg('droplet', 14)}</span>
             <span>Accent</span>
+          </div>
+          <div class="settings-nav-row" data-section="glass">
+            <span class="settings-nav-icon">${getIconSvg('droplet', 14)}</span>
+            <span>Liquid Glass</span>
           </div>
           <div class="settings-group-header">Terminal</div>
           <div class="settings-nav-row" data-section="font">
@@ -1714,10 +2057,10 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <div class="segmented-control" id="ctrl-mode">
-                    <button class="segmented-btn" data-mode="light">Light</button>
-                    <button class="segmented-btn" data-mode="dark">Dark</button>
-                    <button class="segmented-btn" data-mode="auto">Auto</button>
+                  <div class="mts-btn-group segmented-control" id="ctrl-mode">
+                    <button class="mts-btn segmented-btn" data-mode="light">Light</button>
+                    <button class="mts-btn segmented-btn" data-mode="dark">Dark</button>
+                    <button class="mts-btn segmented-btn" data-mode="auto">Auto</button>
                   </div>
                 </div>
               </div>
@@ -1731,6 +2074,21 @@
                 </div>
                 <div class="settings-row-right">
                   <div class="accent-swatches" id="ctrl-accent"></div>
+                </div>
+              </div>
+              <div class="settings-row" id="row-glass">
+                <div class="settings-row-left">
+                  <div class="settings-tile" style="background:#007aff;">${getIconSvg('droplet', 16)}</div>
+                  <div class="settings-row-text">
+                    <div class="settings-row-title">Liquid Glass</div>
+                    <div class="settings-row-desc">macOS 27 Golden Gate system transparency</div>
+                  </div>
+                </div>
+                <div class="settings-row-right">
+                  <div class="mts-slider-wrap settings-slider-wrap" id="wrap-liquid-glass">
+                    <input type="range" class="mts-slider settings-slider" id="ctrl-glass" min="0" max="1" step="0.05" />
+                    <span id="label-glass">0.80</span>
+                  </div>
                 </div>
               </div>
               <div class="settings-row" id="row-wallpaper">
@@ -1760,8 +2118,8 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <div class="settings-slider-wrap">
-                    <input type="range" class="settings-slider" id="ctrl-term-font" min="12" max="16" step="1" />
+                  <div class="mts-slider-wrap settings-slider-wrap">
+                    <input type="range" class="mts-slider settings-slider" id="ctrl-term-font" min="12" max="16" step="1" />
                     <span id="label-term-font">13px</span>
                   </div>
                 </div>
@@ -1775,10 +2133,12 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="ctrl-term-path" />
-                    <span class="toggle-track"></span>
-                  </label>
+                  <div class="mts-toggle-wrap">
+                    <label class="mts-toggle toggle-switch">
+                      <input type="checkbox" id="ctrl-term-path" />
+                      <span class="mts-toggle__thumb toggle-track"></span>
+                    </label>
+                  </div>
                 </div>
               </div>
               <div class="settings-row" id="row-line-height">
@@ -1790,8 +2150,8 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <div class="settings-slider-wrap">
-                    <input type="range" class="settings-slider" id="ctrl-term-lh" min="1.3" max="1.8" step="0.1" />
+                  <div class="mts-slider-wrap settings-slider-wrap">
+                    <input type="range" class="mts-slider settings-slider" id="ctrl-term-lh" min="1.3" max="1.8" step="0.1" />
                     <span id="label-term-lh">1.5</span>
                   </div>
                 </div>
@@ -1811,9 +2171,9 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <div class="segmented-control" id="ctrl-motion">
-                    <button class="segmented-btn" data-motion="full">Full</button>
-                    <button class="segmented-btn" data-motion="reduced">Reduced</button>
+                  <div class="mts-btn-group segmented-control" id="ctrl-motion">
+                    <button class="mts-btn segmented-btn" data-motion="full">Full</button>
+                    <button class="mts-btn segmented-btn" data-motion="reduced">Reduced</button>
                   </div>
                 </div>
               </div>
@@ -1826,20 +2186,20 @@
                   </div>
                 </div>
                 <div class="settings-row-right">
-                  <button class="btn-modal btn-modal-cancel" id="btn-open-reset" style="border:1px solid var(--border-subtle);">Reset...</button>
+                  <button class="mts-btn mts-btn--secondary btn-modal btn-modal-cancel" id="btn-open-reset">Reset...</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-backdrop" id="modal-reset">
-          <div class="modal-box">
-            <div class="modal-title">Reset All Settings?</div>
-            <div class="modal-desc">Are you sure you want to restore all appearance and terminal settings to system defaults?</div>
-            <div class="modal-btns">
-              <button class="btn-modal btn-modal-cancel" id="btn-modal-cancel">Cancel</button>
-              <button class="btn-modal btn-modal-danger" id="btn-modal-confirm">Reset</button>
+        <div class="mts-modal-backdrop modal-backdrop" id="modal-reset">
+          <div class="mts-modal modal-box">
+            <div class="mts-modal__title modal-title">Reset All Settings?</div>
+            <div class="mts-modal__body modal-desc">Are you sure you want to restore all appearance and terminal settings to system defaults?</div>
+            <div class="mts-modal__footer modal-btns">
+              <button class="mts-btn mts-btn--secondary btn-modal btn-modal-cancel" id="btn-modal-cancel">Cancel</button>
+              <button class="mts-btn mts-btn--danger btn-modal btn-modal-danger" id="btn-modal-confirm">Reset</button>
             </div>
           </div>
         </div>
@@ -1882,6 +2242,12 @@
       });
 
       // Sliders & Toggles
+      const glassSlider = container.querySelector('#ctrl-glass');
+      const glassLabel = container.querySelector('#label-glass');
+      if (glassSlider) {
+        glassSlider.addEventListener('input', (e) => { Settings.set('glassOpacity', e.target.value); });
+      }
+
       const fontSlider = container.querySelector('#ctrl-term-font');
       const fontLabel = container.querySelector('#label-term-font');
       fontSlider.addEventListener('input', (e) => { Settings.set('termFontSize', e.target.value); });
@@ -1907,6 +2273,7 @@
         appearance: { icon: 'palette', title: 'Appearance', subtitle: 'Customize the look and feel of WebOS', target: 'card-wrap-appearance' },
         wallpaper: { icon: 'image', title: 'Wallpaper', subtitle: 'Choose a desktop background for WebOS', target: 'row-wallpaper' },
         accent: { icon: 'droplet', title: 'Accent Color', subtitle: 'Select an accent color for controls and highlights', target: 'row-accent' },
+        glass: { icon: 'droplet', title: 'Liquid Glass', subtitle: 'macOS 27 Golden Gate system transparency and glass blur', target: 'row-glass' },
         font: { icon: 'type', title: 'Terminal Font', subtitle: 'Adjust terminal font size and typography line height', target: 'row-font' },
         behavior: { icon: 'terminal', title: 'Terminal Behavior', subtitle: 'Configure prompt display and shell interaction', target: 'row-path' },
         motion: { icon: 'activity', title: 'Motion', subtitle: 'Control window animations and motion speed', target: 'row-motion' },
@@ -1950,6 +2317,8 @@
         container.querySelectorAll('#ctrl-wallpaper .wallpaper-tile').forEach(tile => {
           tile.classList.toggle('active', tile.dataset.wallpaper === s.wallpaper);
         });
+        if (glassSlider) glassSlider.value = s.glassOpacity ?? 0.8;
+        if (glassLabel) glassLabel.textContent = (s.glassOpacity !== undefined ? s.glassOpacity : 0.8).toFixed(2);
         if (fontSlider) fontSlider.value = s.termFontSize;
         if (fontLabel) fontLabel.textContent = s.termFontSize + 'px';
         if (lhSlider) lhSlider.value = s.termLineHeight || 1.5;
@@ -1970,7 +2339,522 @@
       });
     }
 
-    // App 5: About Application
+    // App 5: File Manager Application (Files) with Matios UI Integration
+    function launchFiles(initialPath = '/home/user') {
+      const existing = WindowManager.windows.find(w => w.appKey === 'files');
+      if (existing) {
+        WindowManager.restore(existing.el);
+        if (existing.navigateTo) existing.navigateTo(initialPath);
+        return;
+      }
+
+      const pid = Kernel.spawn('files', 2, 20.0, initialPath);
+      let currentPath = Kernel.fs.normalize(initialPath);
+      let viewMode = 'grid';
+      let history = [currentPath];
+      let historyIdx = 0;
+      let searchQuery = '';
+      let selectedItem = null;
+      let toastTimer = null;
+      let winEl = null;
+
+      const container = document.createElement('div');
+      container.className = 'files-container';
+      container.innerHTML = `
+        <div class="files-toolbar">
+          <div class="files-toolbar-nav">
+            <button class="mts-btn files-nav-btn" id="files-btn-back" title="Back">${getIconSvg('chevronLeft', 14)}</button>
+            <button class="mts-btn files-nav-btn" id="files-btn-forward" title="Forward">${getIconSvg('chevronRight', 14)}</button>
+            <div class="files-breadcrumbs" id="files-breadcrumbs"></div>
+          </div>
+          <div class="files-toolbar-actions">
+            <div class="mts-btn-group" id="files-view-toggle">
+              <button class="mts-btn active" data-view="grid" title="Icon View">${getIconSvg('grid', 14)}</button>
+              <button class="mts-btn" data-view="list" title="List View">${getIconSvg('list', 14)}</button>
+            </div>
+            <button class="mts-btn" id="files-btn-new-folder" title="New Folder">${getIconSvg('plus', 14)} New Folder</button>
+            <div class="files-search-wrap">
+              <span class="files-search-icon">${getIconSvg('search', 12)}</span>
+              <input class="files-search-input mts-input" id="files-search-input" placeholder="Search" />
+            </div>
+          </div>
+        </div>
+        <div class="files-body">
+          <div class="files-sidebar">
+            <div class="files-sidebar-section">Favorites</div>
+            <div class="files-sidebar-row" data-path="/home/user">${getIconSvg('home', 14)} <span>Home</span></div>
+            <div class="files-sidebar-row" data-path="/home/user/Desktop">${getIconSvg('monitor', 14)} <span>Desktop</span></div>
+            <div class="files-sidebar-row" data-path="/home/user/Documents">${getIconSvg('fileText', 14)} <span>Documents</span></div>
+            <div class="files-sidebar-row" data-path="/home/user/Downloads">${getIconSvg('download', 14)} <span>Downloads</span></div>
+            <div class="files-sidebar-section">Locations</div>
+            <div class="files-sidebar-row" data-path="/">${getIconSvg('hardDrive', 14)} <span>Root (/)</span></div>
+            <div class="files-sidebar-row" data-path="/bin">${getIconSvg('folder', 14)} <span>Bin</span></div>
+            <div class="files-sidebar-row" data-path="/etc">${getIconSvg('folder', 14)} <span>Etc</span></div>
+            <div class="files-sidebar-row" data-path="/tmp">${getIconSvg('folder', 14)} <span>Tmp</span></div>
+          </div>
+          <div class="files-content" id="files-content"></div>
+        </div>
+        <div class="files-toast" id="files-toast"></div>
+        <div class="mts-modal-backdrop modal-backdrop" id="files-delete-modal">
+          <div class="mts-modal modal-box">
+            <div class="mts-modal__title modal-title" id="files-del-title">Delete Item?</div>
+            <div class="mts-modal__body modal-desc" id="files-del-desc">Are you sure you want to permanently delete this item?</div>
+            <div class="mts-modal__footer modal-btns">
+              <button class="mts-btn mts-btn--secondary btn-modal btn-modal-cancel" id="files-del-cancel">Cancel</button>
+              <button class="mts-btn mts-btn--danger btn-modal btn-modal-danger" id="files-del-confirm">Delete</button>
+            </div>
+          </div>
+        </div>
+        <div class="mts-ctx-menu" id="files-ctx-menu" style="display:none;"></div>
+      `;
+
+      const btnBack = container.querySelector('#files-btn-back');
+      const btnForward = container.querySelector('#files-btn-forward');
+      const breadcrumbsEl = container.querySelector('#files-breadcrumbs');
+      const contentEl = container.querySelector('#files-content');
+      const searchInput = container.querySelector('#files-search-input');
+      const toastEl = container.querySelector('#files-toast');
+      const deleteModal = container.querySelector('#files-delete-modal');
+      const delConfirmBtn = container.querySelector('#files-del-confirm');
+      const delCancelBtn = container.querySelector('#files-del-cancel');
+      const ctxMenu = container.querySelector('#files-ctx-menu');
+
+      let pendingDeleteTarget = null;
+
+      function showToast(msg) {
+        if (toastTimer) clearTimeout(toastTimer);
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+      }
+
+      function hideCtxMenu() {
+        ctxMenu.style.display = 'none';
+        ctxMenu.innerHTML = '';
+      }
+
+      function showContextMenu(e, item) {
+        e.preventDefault();
+        e.stopPropagation();
+        hideCtxMenu();
+
+        const items = [];
+        if (item) {
+          items.push({ label: 'Open', icon: 'chevron', action: () => openItem(item) });
+          items.push({ label: 'New Folder', icon: 'plus', action: () => createNewFolder() });
+          items.push({ label: 'Rename', icon: 'edit', action: () => startRename(item.name) });
+          items.push({ label: 'Duplicate', icon: 'copy', action: () => duplicateItem(item.name) });
+          items.push({ label: 'Copy Path', icon: 'fileText', action: () => copyItemPath(item.name) });
+          items.push({ separator: true });
+          items.push({ label: 'Delete', icon: 'trash', danger: true, action: () => promptDelete(item.name) });
+        } else {
+          items.push({ label: 'New Folder', icon: 'plus', action: () => createNewFolder() });
+          items.push({ label: 'Open in Terminal', icon: 'terminal', action: () => { launchTerminal(); } });
+        }
+
+        items.forEach(it => {
+          if (it.separator) {
+            const sep = document.createElement('div');
+            sep.className = 'mts-ctx-menu__separator';
+            ctxMenu.appendChild(sep);
+          } else {
+            const row = document.createElement('div');
+            row.className = 'mts-ctx-menu__item' + (it.danger ? ' mts-ctx-menu__item--danger' : '');
+            row.innerHTML = `${getIconSvg(it.icon, 13)} <span>${it.label}</span>`;
+            row.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              hideCtxMenu();
+              it.action();
+            });
+            ctxMenu.appendChild(row);
+          }
+        });
+
+        ctxMenu.style.display = 'block';
+        const rect = container.getBoundingClientRect();
+        const menuX = Math.min(e.clientX, rect.right - 160);
+        const menuY = Math.min(e.clientY, rect.bottom - 180);
+        ctxMenu.style.left = menuX + 'px';
+        ctxMenu.style.top = menuY + 'px';
+      }
+
+      function renderBreadcrumbs() {
+        breadcrumbsEl.innerHTML = '';
+        const parts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
+
+        const rootCrumb = document.createElement('span');
+        rootCrumb.className = 'files-crumb' + (currentPath === '/' ? ' active' : '');
+        rootCrumb.textContent = '/';
+        rootCrumb.addEventListener('click', () => navigateTo('/'));
+        breadcrumbsEl.appendChild(rootCrumb);
+
+        let accum = '';
+        parts.forEach((part, idx) => {
+          accum += '/' + part;
+          const target = accum;
+          const sep = document.createElement('span');
+          sep.className = 'files-crumb-sep';
+          sep.textContent = '>';
+          breadcrumbsEl.appendChild(sep);
+
+          const crumb = document.createElement('span');
+          crumb.className = 'files-crumb' + (idx === parts.length - 1 ? ' active' : '');
+          crumb.textContent = part;
+          crumb.addEventListener('click', () => navigateTo(target));
+          breadcrumbsEl.appendChild(crumb);
+        });
+
+        btnBack.disabled = historyIdx <= 0;
+        btnForward.disabled = historyIdx >= history.length - 1;
+      }
+
+      function renderSidebar() {
+        container.querySelectorAll('.files-sidebar-row').forEach(row => {
+          row.classList.toggle('active', row.dataset.path === currentPath);
+        });
+      }
+
+      function formatSize(bytes) {
+        if (bytes === 0) return '0 B';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+      }
+
+      function formatDate(ms) {
+        const d = new Date(ms || Date.now());
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      function openItem(item) {
+        if (item.type === 'dir') {
+          navigateTo(Kernel.fs.normalize(item.name, currentPath));
+        } else {
+          showToast('No app to open this file yet');
+        }
+      }
+
+      function createNewFolder() {
+        let base = 'New Folder';
+        let name = base;
+        let count = 2;
+        while (true) {
+          try {
+            Kernel.fs.mkdir(name, currentPath);
+            break;
+          } catch (e) {
+            name = `${base} ${count++}`;
+          }
+        }
+        renderContent();
+        startRename(name);
+        showToast(`Created '${name}'`);
+      }
+
+      function duplicateItem(name) {
+        try {
+          const newName = Kernel.fs.duplicate(name, currentPath);
+          renderContent();
+          showToast(`Duplicated to '${newName}'`);
+        } catch (e) {
+          showToast(`Error: ${e.message}`);
+        }
+      }
+
+      function copyItemPath(name) {
+        const full = Kernel.fs.normalize(name, currentPath);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(full).catch(() => {});
+        }
+        showToast(`Copied path: ${full}`);
+      }
+
+      function promptDelete(name) {
+        pendingDeleteTarget = name;
+        const targetNode = Kernel.fs.resolve(name, currentPath);
+        if (targetNode && targetNode.type === 'dir' && Object.keys(targetNode.children || {}).length > 0) {
+          container.querySelector('#files-del-title').textContent = 'Delete Folder?';
+          container.querySelector('#files-del-desc').textContent = `Are you sure you want to delete '${name}' and all its contents?`;
+          deleteModal.classList.add('open');
+        } else {
+          try {
+            Kernel.fs.remove(name, currentPath, true);
+            renderContent();
+            showToast(`Deleted '${name}'`);
+          } catch (e) {
+            showToast(`Delete failed: ${e.message}`);
+          }
+        }
+      }
+
+      delConfirmBtn.addEventListener('click', () => {
+        if (pendingDeleteTarget) {
+          try {
+            Kernel.fs.remove(pendingDeleteTarget, currentPath, true);
+            renderContent();
+            showToast(`Deleted '${pendingDeleteTarget}'`);
+          } catch (e) {
+            showToast(`Delete failed: ${e.message}`);
+          }
+        }
+        deleteModal.classList.remove('open');
+        pendingDeleteTarget = null;
+      });
+
+      delCancelBtn.addEventListener('click', () => {
+        deleteModal.classList.remove('open');
+        pendingDeleteTarget = null;
+      });
+
+      function startRename(name) {
+        const itemEl = contentEl.querySelector(`[data-name="${CSS.escape(name)}"]`);
+        if (!itemEl) return;
+        const labelEl = itemEl.querySelector('.files-rename-target');
+        if (!labelEl) return;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'files-rename-input';
+        input.value = name;
+        labelEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let committed = false;
+        const commit = () => {
+          if (committed) return;
+          committed = true;
+          const newName = input.value.trim();
+          if (newName && newName !== name) {
+            try {
+              Kernel.fs.rename(name, newName, currentPath);
+              showToast(`Renamed to '${newName}'`);
+            } catch (e) {
+              showToast(`Rename error: ${e.message}`);
+            }
+          }
+          renderContent();
+        };
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { committed = true; renderContent(); }
+        });
+        input.addEventListener('blur', commit);
+      }
+
+      function renderContent() {
+        hideCtxMenu();
+        selectedItem = null;
+        const currNode = Kernel.fs.resolve(currentPath, '/');
+        if (!currNode || currNode.type !== 'dir') {
+          contentEl.innerHTML = `<div class="files-empty">${getIconSvg('info', 28)} <span>Directory not found</span></div>`;
+          return;
+        }
+
+        let items = Object.values(currNode.children || {}).sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+
+        if (searchQuery) {
+          items = items.filter(it => it.name.toLowerCase().includes(searchQuery));
+        }
+
+        if (items.length === 0) {
+          contentEl.innerHTML = `<div class="files-empty">${getIconSvg('folder', 32)} <span>${searchQuery ? 'No matching items' : 'Folder is empty'}</span></div>`;
+          return;
+        }
+
+        if (viewMode === 'grid') {
+          const grid = document.createElement('div');
+          grid.className = 'files-grid';
+          items.forEach(it => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'files-grid-item';
+            itemEl.dataset.name = it.name;
+            const iconSvg = it.type === 'dir' ? getIconSvg('folder', 40) : getIconSvg('fileText', 40);
+            itemEl.innerHTML = `
+              <div class="files-grid-icon">${iconSvg}</div>
+              <div class="files-grid-label files-rename-target">${escapeHtml(it.name)}</div>
+            `;
+            itemEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              grid.querySelectorAll('.files-grid-item').forEach(x => x.classList.remove('selected'));
+              itemEl.classList.add('selected');
+              selectedItem = it;
+            });
+            itemEl.addEventListener('dblclick', (e) => {
+              e.stopPropagation();
+              openItem(it);
+            });
+            itemEl.addEventListener('contextmenu', (e) => {
+              grid.querySelectorAll('.files-grid-item').forEach(x => x.classList.remove('selected'));
+              itemEl.classList.add('selected');
+              selectedItem = it;
+              showContextMenu(e, it);
+            });
+            grid.appendChild(itemEl);
+          });
+          contentEl.innerHTML = '';
+          contentEl.appendChild(grid);
+        } else {
+          const table = document.createElement('table');
+          table.className = 'files-list-table';
+          table.innerHTML = `
+            <thead>
+              <tr>
+                <th style="width:50%;">Name</th>
+                <th style="width:22%;">Size</th>
+                <th style="width:28%;">Modified</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          `;
+          const tbody = table.querySelector('tbody');
+          items.forEach(it => {
+            const tr = document.createElement('tr');
+            tr.dataset.name = it.name;
+            const iconSvg = it.type === 'dir' ? getIconSvg('folder', 16) : getIconSvg('fileText', 16);
+            const sizeStr = it.type === 'dir' ? '--' : formatSize(it.content ? it.content.length : 0);
+            const dateStr = formatDate(it.mtime);
+            tr.innerHTML = `
+              <td>
+                <div class="files-list-name-cell">
+                  <span style="color:var(--accent);">${iconSvg}</span>
+                  <span class="files-rename-target">${escapeHtml(it.name)}</span>
+                </div>
+              </td>
+              <td style="color:var(--text-muted); font-family:var(--font-mono);">${sizeStr}</td>
+              <td style="color:var(--text-muted); font-family:var(--font-mono);">${dateStr}</td>
+            `;
+            tr.addEventListener('click', (e) => {
+              e.stopPropagation();
+              tbody.querySelectorAll('tr').forEach(x => x.classList.remove('selected'));
+              tr.classList.add('selected');
+              selectedItem = it;
+            });
+            tr.addEventListener('dblclick', (e) => {
+              e.stopPropagation();
+              openItem(it);
+            });
+            tr.addEventListener('contextmenu', (e) => {
+              tbody.querySelectorAll('tr').forEach(x => x.classList.remove('selected'));
+              tr.classList.add('selected');
+              selectedItem = it;
+              showContextMenu(e, it);
+            });
+            tbody.appendChild(tr);
+          });
+          contentEl.innerHTML = '';
+          contentEl.appendChild(table);
+        }
+      }
+
+      function updateTitle() {
+        const titleName = currentPath === '/' ? 'Files' : (currentPath.split('/').filter(Boolean).pop() || 'Files');
+        if (winEl) {
+          const t = winEl.querySelector('.window-title');
+          if (t) t.textContent = titleName;
+          const rec = WindowManager.windows.find(w => w.pid === pid);
+          if (rec) rec.title = titleName;
+        }
+      }
+
+      function navigateTo(newPath) {
+        const canonical = Kernel.fs.normalize(newPath, '/');
+        const node = Kernel.fs.resolve(canonical, '/');
+        if (!node || node.type !== 'dir') {
+          showToast(`Directory not found: ${canonical}`);
+          return;
+        }
+        if (currentPath !== canonical) {
+          history = history.slice(0, historyIdx + 1);
+          history.push(canonical);
+          historyIdx = history.length - 1;
+          currentPath = canonical;
+        }
+        updateTitle();
+        renderBreadcrumbs();
+        renderSidebar();
+        renderContent();
+      }
+
+      btnBack.addEventListener('click', () => {
+        if (historyIdx > 0) {
+          historyIdx--;
+          currentPath = history[historyIdx];
+          updateTitle();
+          renderBreadcrumbs();
+          renderSidebar();
+          renderContent();
+        }
+      });
+
+      btnForward.addEventListener('click', () => {
+        if (historyIdx < history.length - 1) {
+          historyIdx++;
+          currentPath = history[historyIdx];
+          updateTitle();
+          renderBreadcrumbs();
+          renderSidebar();
+          renderContent();
+        }
+      });
+
+      container.querySelector('#files-view-toggle').querySelectorAll('.mts-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelector('#files-view-toggle').querySelectorAll('.mts-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          viewMode = btn.dataset.view;
+          renderContent();
+        });
+      });
+
+      container.querySelector('#files-btn-new-folder').addEventListener('click', () => createNewFolder());
+
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        renderContent();
+      });
+
+      container.querySelectorAll('.files-sidebar-row').forEach(row => {
+        row.addEventListener('click', () => navigateTo(row.dataset.path));
+      });
+
+      contentEl.addEventListener('click', () => {
+        hideCtxMenu();
+        contentEl.querySelectorAll('.selected').forEach(x => x.classList.remove('selected'));
+        selectedItem = null;
+      });
+
+      contentEl.addEventListener('contextmenu', (e) => {
+        if (e.target === contentEl || e.target.classList.contains('files-grid') || e.target.classList.contains('files-empty')) {
+          showContextMenu(e, null);
+        }
+      });
+
+      document.addEventListener('click', hideCtxMenu);
+
+      const initialTitle = initialPath === '/' ? 'Files' : (initialPath.split('/').filter(Boolean).pop() || 'Files');
+      winEl = WindowManager.createWindow({
+        title: initialTitle,
+        pid,
+        width: 720,
+        height: 480,
+        contentEl: container,
+        appKey: 'files',
+        onClose: () => {
+          document.removeEventListener('click', hideCtxMenu);
+        }
+      });
+      winEl.navigateTo = navigateTo;
+
+      navigateTo(initialPath);
+    }
+
+    // App 6: About Application
     function launchAbout() {
       const existing = WindowManager.windows.find(w => w.title === 'About');
       if (existing) {
@@ -1983,21 +2867,21 @@
       container.className = 'about-container';
       container.innerHTML = `
         <div class="about-logo">${getIconSvg('info', 28)}</div>
-        <div class="about-title">WebOS v5.1 (macOS Sequoia Edition)</div>
-        <p class="about-desc">A browser-based operating system simulation built with vanilla HTML, CSS, and JavaScript. Featuring macOS window chrome, Lucide SVG system, live pro theming, RR scheduler, and persistent VFS.</p>
+        <div class="about-title">WebOS v6.2 (Golden Gate Edition)</div>
+        <p class="about-desc">A browser-based operating system simulation built with vanilla HTML, CSS, JavaScript, and Matios UI. Featuring macOS Golden Gate Liquid Glass transparency, shareable theme JSON system, File Manager, RR scheduler, and persistent VFS.</p>
         <div class="about-meta">
-          <div><strong>Kernel:</strong> WebOS microkernel v5.1.0 (Preemptive RR)</div>
-          <div><strong>Shell:</strong> WebOS POSIX Shell with Streams (term-v5.1)</div>
-          <div><strong>Filesystem:</strong> Persistent Virtual In-Memory Tree</div>
+          <div><strong>Kernel:</strong> WebOS microkernel v6.2.0 (Preemptive RR)</div>
+          <div><strong>Shell:</strong> WebOS POSIX Shell with Streams & Theme CLI</div>
+          <div><strong>Filesystem:</strong> Persistent Virtual In-Memory Tree with mtime</div>
           <div><strong>Architecture:</strong> x86_64 Browser Virtual Machine</div>
         </div>
       `;
-      WindowManager.createWindow({ title: 'About', pid, width: 420, height: 320, contentEl: container, appKey: 'about' });
+      WindowManager.createWindow({ title: 'About', pid, width: 440, height: 330, contentEl: container, appKey: 'about' });
     }
 
     // --- 4. Boot Sequence & Initialization ---
     const bootLines = [
-      "WebOS BIOS v0.5.1 (x86_64 Browser Emulation)",
+      "WebOS BIOS v0.6.2 (x86_64 Browser Emulation)",
       "CPU: Virtual JS Engine @ 3.20GHz [1 core, 1 scheduler]",
       "Memory check: 640K Base, 16384K Extended ... OK",
       "Initializing persistent storage from localStorage ... OK",
@@ -2008,7 +2892,7 @@
       "Initializing stream pipeline architecture ... OK",
       "Starting system services: udevd, syslogd, dbus ... OK",
       "Launching userland display manager ... OK",
-      "Welcome to WebOS v5.1!"
+      "Welcome to WebOS v6.2!"
     ];
 
     function startBootSequence() {
@@ -2037,6 +2921,9 @@
     }
 
     function initOperatingSystem() {
+      window.Kernel = Kernel;
+      window.Settings = Settings;
+      window.WindowManager = WindowManager;
       Settings.load();
       Kernel.fs.load();
       Kernel.spawn('kernel', 5, 32.0, '/');
@@ -2045,7 +2932,7 @@
 
       // Populate Desktop & Taskbar Icons with SVGs
       [
-        ['terminal', 'terminal'], ['taskmgr', 'activity'], ['kernellog', 'log'],
+        ['terminal', 'terminal'], ['files', 'folder'], ['taskmgr', 'activity'], ['kernellog', 'log'],
         ['settings', 'settings'], ['about', 'info']
       ].forEach(([app, icon]) => {
         const d = document.getElementById('icon-sym-' + app);
@@ -2059,7 +2946,14 @@
       updateClock();
       setInterval(updateClock, 1000);
 
-      const appLaunchers = { terminal: launchTerminal, taskmgr: launchTaskManager, kernellog: launchKernelLog, settings: launchSettings, about: launchAbout };
+      const appLaunchers = {
+        terminal: launchTerminal,
+        files: launchFiles,
+        taskmgr: launchTaskManager,
+        kernellog: launchKernelLog,
+        settings: launchSettings,
+        about: launchAbout
+      };
       Object.entries(appLaunchers).forEach(([app, fn]) => {
         const d = document.getElementById('icon-' + app);
         if (d) d.addEventListener('click', fn);

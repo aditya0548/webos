@@ -1,171 +1,161 @@
-# Implementation Plan: WebOS v5.1 Precision Polish (macOS System Settings & Window Motion)
+# Implementation Plan: WebOS v6.2 — Matios UI Integration, macOS 27 Liquid Glass & Shareable Themes
 
-This implementation plan details the strategy for upgrading **WebOS v5** to **WebOS v5.1** in-place inside `index.html`. The focus is twofold:
-1. **Rebuilding the Settings App**: Mirroring macOS Sequoia System Settings structure with a two-pane layout, 200px translucent sidebar, decorative search, 3 grouped sections with 7 total rows, dynamic 48px header cards, 28px colored icon tiles, live settings binding, and a centered reset confirmation modal.
-2. **Tuning Window Motion to Apple Spec**: Implementing Apple's cubic-bezier timing curves (`cubic-bezier(0.32, 0.72, 0, 1)` and `cubic-bezier(0.4, 0, 1, 1)`), sub-300ms transitions, 1:1 instantaneous drag response, and full accessibility fallback for reduced motion.
+## 1. Overview & Architectural Goals
 
----
+WebOS v6.2 is a **"Library Integration & Polish"** milestone. It integrates **Matios UI**—a zero-build, dependency-free CSS/JS UI component framework—into the existing single-file WebOS architecture, introduces the **macOS 27 "Golden Gate" Liquid Glass transparency slider**, provides a **shareable theme file system** within the Virtual File System (VFS), and incorporates the complete **File Manager ("Files")** desktop application.
 
-## User Review Required
-
-> [!IMPORTANT]
-> - **Self-Contained Architecture Preserved**: All changes will be made directly in [index.html](file:///Users/aditya/webos/index.html). No npm dependencies, CDNs, or external libraries will be introduced.
-> - **Zero-Emoji Policy**: All icons are inline geometric SVGs (1.5 stroke width) matching the Apple SF Symbols aesthetic. Zero emojis will exist anywhere in the UI or terminal text.
-> - **Strict Line Budget**: Code optimizations will maintain total file size well under the ~2,100 line limit (currently 1,884 lines).
+All additions will be made **in place within `index.html`** while preserving every existing feature:
+- 100ms preemptive round-robin scheduler
+- In-memory VFS with `localStorage` persistence, per-process `cwd`, and safety flow for `rm -rf /`
+- Shell with pipes, redirections, and process execution
+- Window manager with authentic Apple cubic-bezier window motion
+- Zero-emoji design aesthetic using Lucide-style inline SVGs
 
 ---
 
-## Proposed Changes
+## 2. Target Specifications & Technical Design
 
-```
-WebOS v5.1 Architecture Overview:
-┌────────────────────────────────────────────────────────────────────────┐
-│ index.html                                                             │
-│                                                                        │
-│ ┌──────────────────────┐   ┌─────────────────────────────────────────┐ │
-│ │ Window Motion (CSS)  │   │ Settings App Architecture               │ │
-│ │ - cubic-bezier open  │   │ ┌───────────────┐ ┌───────────────────┐ │ │
-│ │ - cubic-bezier close │   │ │ Left Sidebar  │ │ Right Content     │ │ │
-│ │ - minimize / max     │   │ │ - Search (28p)│ │ - Header Card     │ │ │
-│ │ - reduced-motion     │   │ │ - 3 Groups    │ │ - 28px Icon Tiles │ │ │
-│ └──────────────────────┘   │ │ - 7 Rows      │ │ - Reset Modal     │ │ │
-│                            │ └───────────────┘ └───────────────────┘ │ │
-│                            └─────────────────────────────────────────┘ │
-│                                                                        │
-│ ┌────────────────────────────────────────────────────────────────────┐ │
-│ │ Preserved Subsystems: RR Scheduler, VFS, Shell Streams, Terminal   │ │
-│ └────────────────────────────────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────┘
-```
+### A. Matios UI Framework Integration (Zero-Build CDN)
+- **CDN Assets in `<head>`**:
+  ```html
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.css">
+  <link id="mts-accent-link" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@matios/ui/themes/matios-ui-accent-violet.css">
+  <script src="https://cdn.jsdelivr.net/npm/@matios/ui/dist/matios-ui.min.js"></script>
+  ```
+- **Global Availability**: `window.MTS` will be available after boot.
+- **Theme & Mode Synchronization**:
+  - Whenever WebOS switches light/dark mode, update `<html data-mts-mode="dark|light">` to keep all Matios components natively themed.
+  - Whenever WebOS accent color changes, map the 8 WebOS accents to Matios theme equivalents (e.g., `blue` &rarr; `matios-ui-accent-blue.css`, `purple` &rarr; `matios-ui-accent-violet.css`, `orange` &rarr; `matios-ui-accent-orange.css`, etc.) and set `<html data-mts-accent="...">`.
+- **Scope & Scoping Boundary**:
+  - Matios UI components will be utilized strictly for **application content controls** (Settings controls, File Manager toolbar, context menus, and confirmation dialogs).
+  - OS-level window chrome (traffic light buttons, title bars, window framing) remains custom to preserve authentic macOS Sequoia styling.
 
----
+### B. macOS 27 "Golden Gate" Liquid Glass Transparency Slider
+- **CSS Variable**: `--glass-opacity` defined on `:root` (default `0.8`, valid range `0.0` to `1.0`).
+- **Dynamic Glass Styling**:
+  - Taskbar: `background: rgba(var(--taskbar-bg-rgb), var(--glass-opacity)); backdrop-filter: blur(calc(24px * var(--glass-opacity)));`
+  - Window Titlebars: `background: rgba(var(--titlebar-bg-rgb), var(--glass-opacity)); backdrop-filter: blur(calc(20px * var(--glass-opacity)));`
+  - Sidebar surfaces: dynamic frosted glass scaling with `--glass-opacity`.
+- **Settings App Integration**:
+  - Located under the **APPEARANCE** section as a dedicated row.
+  - Row Label: `"Liquid Glass"`.
+  - Icon Tile: Droplet icon on a vibrant blue tile (`#007aff`).
+  - Control: Matios-styled slider from `0.0` (ultra-clear glass) to `1.0` (fully opaque tinted glass), showing live decimal value readout (`0.80`).
+- **Persistence & CLI**:
+  - Persisted to `localStorage["webos.settings"]` under `glassOpacity`.
+  - Supported in shell: `theme set glassOpacity <0.0-1.0>`.
+  - Exported in `theme export` JSON object.
 
-### Component 1: Icon System Expansion & Theming Subsystem
-**File:** [index.html](file:///Users/aditya/webos/index.html)
+### C. Shareable Theme File System
+- **File System Location**: `/home/user/Documents/webos-theme-<name>.json`.
+- **JSON Schema**:
+  ```json
+  {
+    "version": "6.2",
+    "name": "<name>",
+    "mode": "dark" | "light",
+    "accent": "blue" | "purple" | "pink" | "red" | "orange" | "yellow" | "green" | "graphite",
+    "wallpaper": 1 | 2 | 3 | 4 | 5 | 6,
+    "motion": "full" | "reduced",
+    "glassOpacity": 0.8,
+    "termFontSize": 13,
+    "termLineHeight": 1.5,
+    "termShowPath": true
+  }
+  ```
+- **CLI Commands**:
+  - `theme save <name>`: Serializes current settings to `/home/user/Documents/webos-theme-<name>.json`.
+  - `theme load <path>`: Reads theme JSON from VFS path, parses/validates fields, applies settings dynamically, updates CSS variables and Matios mode/accent, persists to `localStorage`.
+  - `theme list`: Scans `/home/user/Documents/`, lists all files matching `webos-theme-*.json`, displaying name, accent, mode, and glass opacity.
 
-- **New Lucide SVG Glyphs**:
-  - `image`: Rectangular frame with sun and mountain silhouette for Wallpaper.
-  - `droplet`: Geometric teardrop icon for Accent.
-  - `type`: Serif/sans T glyph for Terminal Font.
-  - `alignLeft`: Horizontal step lines for Terminal Line Height.
-- **Settings State Extension**:
-  - Extend `Settings.defaults` with `termLineHeight: 1.5`.
-  - Expose CSS variable `--term-line-height` on `:root` and connect to `.terminal-container`.
-  - Ensure `Settings.set('termLineHeight', val)` accepts `1.3` to `1.8` and syncs live to `localStorage["webos.settings"]`.
+### D. File Manager ("Files") App & VFS Modernization (v6.1 Foundation)
+- **VFS Extensions**:
+  - Add `mtime` tracking across touch, mkdir, write, rename, duplicate, remove.
+  - Implement graceful migration in `Kernel.fs.load()` for legacy trees without `mtime`.
+  - Ensure `/home/user/Desktop`, `/home/user/Documents`, `/home/user/Downloads` exist on boot.
+  - Implement `Kernel.fs.stat(path, cwd)`, `Kernel.fs.rename(path, newName, cwd)`, `Kernel.fs.duplicate(path, cwd)`, and recursive `Kernel.fs.remove(path, cwd, recursive)`.
+- **Files Application UI**:
+  - Process name: `files` (`Kernel.spawn('files', 2, 20.0, currentPath)`).
+  - Desktop icon (`#icon-files`) and taskbar button (`#taskbar-btn-files`) with active dot indicator.
+  - **Finder 38px Toolbar**:
+    - Left: Back/Forward navigation buttons and interactive breadcrumbs.
+    - Right: View mode toggle (Grid / List) using Matios button group (`.mts-btn-group`, `.mts-btn`).
+    - Right: New Folder button using Matios icon button (`.mts-btn`).
+    - Right: Search input using Matios input styling (`.mts-input`).
+  - **Translucent Sidebar (180px)**: FAVORITES (Home, Desktop, Documents, Downloads) and LOCATIONS (Root, Bin, Etc, Tmp).
+  - **Content Views**:
+    - Grid (Icon) View: 96×100px cells, 48px icons, soft selection highlight, inline rename.
+    - List View: 24px rows, columns: Name, Size (human-readable), Modified (`mtime`).
+  - **Context Menus**: Built with Matios Context Menu component / styling (`Open`, `New Folder`, `Rename`, `Duplicate`, `Copy path`, `Delete`).
+  - **Delete Confirmation Modal**: Built with Matios Modal component / styling for non-empty folders.
+  - **Toasts**: Non-intrusive notifications for copy path, file actions.
+- **Terminal Integration**:
+  - `files [path]`: Launches File Manager at specified path.
+  - `stat <path>`: Displays formatted node metadata.
+  - `rm -r / -rf <path>`: Recursive removal support.
 
----
-
-### Component 2: macOS System Settings App Rebuild
-**File:** [index.html](file:///Users/aditya/webos/index.html)
-
-- **Two-Pane Window Layout**:
-  - Dimensions: 620×450px with a flexible split.
-  - **Left Sidebar** (~200px wide):
-    - Translucent background with a 1px right border (`rgba(255, 255, 255, 0.08)` in dark, `rgba(0, 0, 0, 0.08)` in light).
-    - Top decorative search field: 28px tall, 6px border-radius, magnifier icon (`search`), placeholder `"Search"`, non-interactive.
-    - 3 Grouped Sections (uppercase, 11px, gray, 6px left padding, 14px top margin):
-      1. **APPEARANCE**: `Appearance` (palette), `Wallpaper` (image), `Accent` (droplet).
-      2. **TERMINAL**: `Font` (type), `Behavior` (terminal).
-      3. **SYSTEM**: `Motion` (activity), `Reset` (trash).
-    - Rows: 28px height, 6px border radius, 14px icon, 11px label.
-    - Active row state: soft rounded pill highlight (`rgba(255,255,255,0.08)` dark / `rgba(0,0,0,0.06)` light).
-    - Hover state: half opacity highlight, 120ms background transition.
-  - **Right Content Pane**:
-    - Header Card at top: rounded 10px, 20px padding, subtle background card (`rgba(255,255,255,0.03)`).
-      - Big centered icon: 48px in accent color (`var(--accent)`).
-      - Bold centered title: 20px.
-      - Muted subtitle: 12px, centered, 2-line max.
-    - Content Cards:
-      - 20px gap below header card.
-      - 10px rounded cards with `rgba(255,255,255,0.03)` background and no harsh outer border.
-      - 44px minimum row height with 12px horizontal padding and 1px separator lines at 6% opacity.
-      - **28×28px Colored Icon Tiles** with 6px radius and white 16px Lucide glyph:
-        - `palette` on Purple (`#af52de`)
-        - `droplet` on Blue (`#007aff`)
-        - `image` on Teal (`#30b0c7`)
-        - `type` on Orange (`#ff9500`)
-        - `terminal` on Green (`#34c759`)
-        - `alignLeft` on Slate (`#8e8e93`)
-        - `activity` on Red (`#ff3b30`)
-        - `trash` on Gray (`#8e8e93`)
-      - Controls:
-        - Theme Mode: segmented control (Light / Dark / Auto).
-        - Accent Color: 8 circular color swatches (20px) with 2px active ring.
-        - Wallpaper: 6 wallpaper preview swatches (48×28px, 6px rounded) with active border.
-        - Font Size: range slider (12–16px) with dynamic live label.
-        - Show Path: macOS-style toggle switch.
-        - Line Height: range slider (1.3–1.8) with live numeric indicator.
-        - Motion: segmented control (Full / Reduced).
-        - Reset to Defaults: "Reset..." button that triggers the modal dialog.
-  - **Reset Confirmation Modal**:
-    - Fixed centered dialog (320px wide, rounded 12px, elevated shadow).
-    - 8px blurred backdrop (`rgba(0,0,0,0.35)`) fading in over 150ms.
-    - Title (15px semibold: "Reset All Settings?"), subtitle (12px muted).
-    - Two buttons: "Cancel" (neutral) and "Reset" (red accent), with instant action handlers.
-
----
-
-### Component 3: Apple-Spec Window Motion Tuning
-**File:** [index.html](file:///Users/aditya/webos/index.html)
-
-- **Timing Curves**:
-  - Open: 220ms, `scale(0.96) → scale(1)`, `opacity: 0 → 1`, `cubic-bezier(0.32, 0.72, 0, 1)`.
-  - Close: 180ms, `scale(1) → scale(0.96)`, `opacity: 1 → 0`, `cubic-bezier(0.4, 0, 1, 1)`.
-  - Minimize: 260ms, `scale(1) → scale(0.15)` + translate toward taskbar icon, `opacity: 1 → 0`, `cubic-bezier(0.32, 0.72, 0, 1)`.
-  - Restore: 240ms reverse minimize transition.
-  - Maximize: 280ms left/top/width/height geometry transition, `cubic-bezier(0.32, 0.72, 0, 1)`.
-  - Restore from Maximize: 260ms reverse.
-  - Focus gain/loss: 200ms ease on `box-shadow`, `border-color`, and titlebar text `opacity`.
-  - Dragging: `.is-dragging { transition: none !important; }` to maintain strict 1:1 mouse tracking.
-  - Reduced Motion Fallback: `@media (prefers-reduced-motion: reduce)` and `[data-motion="reduced"]` bypass all transforms, executing 100ms opacity fades only.
+### E. Settings App Refactoring with Matios UI
+- Retain the macOS System Settings two-pane architecture (200px sidebar + scrollable content cards + 28×28px colored icon tiles).
+- Replace controls with Matios UI equivalents:
+  - Theme Mode: Matios segmented button group (`.mts-btn-group` containing `.mts-btn` items for Light / Dark / Auto).
+  - Sliders (Font Size, Line Height, Liquid Glass): Matios slider styling / component (`.mts-slider-wrap` with header, track, rail, fill, thumb).
+  - Toggles (Show Path): Matios toggle component (`.mts-toggle-wrap`, `.mts-toggle`).
+  - Motion Mode: Matios button group (`Full` / `Reduced`).
+  - Reset & Modals: Matios button (`.mts-btn--secondary`) triggering Matios confirmation modal.
 
 ---
 
-### Component 4: Taskbar Micro-Interactions
-**File:** [index.html](file:///Users/aditya/webos/index.html)
+## 3. Line Budget & Implementation Strategy
 
-- **Hover Elevation**: `.taskbar-btn:hover { transform: scale(1.06); transition: transform 140ms ease-out; }`
-- **Active Indicator Dot**: Fades in over 160ms with a subtle 2px upward translation (`translateY(-2px)`).
-- **Click Behavior**: Clean press feedback without gimmicky wave/ripple effects.
+- **Baseline v5.1**: 2,081 lines
+- **Ceiling Target**: < 3,100 lines
+- **Projected Additions**:
+  - CDN links & `<head>` configuration: ~10 lines
+  - Lucide SVG icons (Files app icons + Golden Gate droplet): ~25 lines
+  - CSS styling (Liquid Glass variables, Matios theme bindings, Files app layout): ~220 lines
+  - VFS enhancements (`mtime`, `stat`, `rename`, `duplicate`, recursive `remove`): ~85 lines
+  - Theme System extensions (`save`, `load`, `list`, `glassOpacity`): ~65 lines
+  - Settings App Matios controls refactoring: ~80 lines
+  - File Manager app implementation with Matios components: ~290 lines
+  - Shell commands (`files`, `stat`, `rm -r`, `help`): ~35 lines
+- **Estimated Total Lines**: ~2,890 lines (comfortably below the 3,100 line limit).
 
 ---
 
-## Verification Plan
+## 4. Verification Plan
 
-### Automated Tests (`verify_v51.js`)
-Extend the automated test runner in the scratch directory and execute against headless Chrome via `run_command`:
+### Automated Test Suite (`verify_v62.js`)
+We will execute an automated, end-to-end verification script via Google Chrome CDP on port 9356:
 
-```bash
-node /Users/aditya/.gemini/antigravity/brain/1ea5e927-9ef3-408d-8f80-8203f0208295/scratch/verify_v51.js
-```
+1. **System & Boot Integrity**:
+   - Zero-emoji audit across entire rendered DOM.
+   - 100ms scheduler quantum check and kernel boot process verification.
+   - Verify `window.MTS` exists and Matios UI CSS/JS loaded successfully.
+2. **Liquid Glass Transparency**:
+   - Verify `--glass-opacity` CSS property on `:root` defaults to `0.8`.
+   - Adjust slider and confirm live update of `--glass-opacity` and visual taskbar opacity.
+   - Verify persistence in `localStorage["webos.settings"]` across page reload.
+   - Test shell command: `theme set glassOpacity 0.5`.
+   - Test `theme export` includes `"glassOpacity": 0.5`.
+3. **Shareable Theme Files**:
+   - Execute `theme save mytheme` &rarr; verify `/home/user/Documents/webos-theme-mytheme.json` created in VFS.
+   - Execute `theme list` &rarr; verify output lists `webos-theme-mytheme.json` with correct metadata.
+   - Execute `theme load /home/user/Documents/webos-theme-mytheme.json` &rarr; verify theme reloaded cleanly.
+4. **Settings App Matios Controls**:
+   - Verify Matios segmented button group (`.mts-btn-group`), slider (`.mts-slider-wrap`), and toggle (`.mts-toggle-wrap`).
+   - Switch mode Light &harr; Dark &rarr; verify `data-mts-mode` attribute updates on `<html>`.
+5. **File Manager App**:
+   - Launch `files` via desktop icon, taskbar button, and shell command `files /home/user`.
+   - Test navigation: back/forward buttons, breadcrumb segments, sidebar favorites/locations.
+   - Test view toggle between Grid (Icon) view and List view.
+   - Test New Folder creation and inline rename on Enter/Esc/blur.
+   - Test Duplicate operation and clipboard copy path with toast.
+   - Test Delete with Matios confirmation dialog for non-empty directories.
+6. **Shell Pipeline & Backward Compatibility**:
+   - Pipeline test: `cat /README.txt | grep WebOS`.
+   - VFS test: `stat /README.txt`.
+   - All v6.1 and v5.1 regression tests passing with exit code 0.
 
-The test suite will assert:
-1. **Boot & Desktop Initialization**: BIOS lines scroll, desktop fades in.
-2. **Settings App Structure**:
-   - Sidebar renders 3 grouped sections and exactly 7 selectable rows.
-   - Decorative search bar is present with magnifier icon.
-   - Header Card dynamically displays the 48px accent icon, title, and subtitle.
-   - Content cards display 28×28px colored icon tiles and proper controls.
-3. **Live Theming & CLI Sync**:
-   - Toggling Theme Mode switches `data-theme` attribute and CSS tokens instantly.
-   - Changing Accent updates window borders, terminal prompt, and selection highlights live.
-   - Wallpaper swatch clicks update desktop background style.
-   - `theme export` returns valid JSON matching current settings.
-   - `theme set accent green` syncs with the GUI Settings app.
-4. **Motion System**:
-   - Setting motion to "reduced" eliminates window scaling transforms and reduces duration to 100ms.
-5. **Reset Confirmation Modal**:
-   - Clicking "Reset..." opens the 320px modal dialog with backdrop blur.
-   - "Cancel" closes the modal without altering state.
-   - "Reset" restores factory defaults and closes the modal.
-6. **Core Systems Integrity**:
-   - Shell pipeline commands (`cat /README.txt | grep WebOS`, `echo hi > /tmp/x.txt`, `ps | grep terminal`) execute with code 0.
-   - Scheduler ticks advance at 100ms quantum.
-   - Process-window linkage terminates processes when traffic light close is clicked.
-7. **Zero-Emoji Audit**:
-   - Automated regex verification ensures 0 emoji characters exist across DOM text and attributes.
-
-### Screenshot Deliverable
-- Capture high-resolution screenshots of WebOS v5.1 with Settings app open in Dark Mode (Terminal and Task Manager stacked behind) and in Light Mode.
-- Output composite image to [webos_screenshot.png](file:///Users/aditya/webos/webos_screenshot.png) and copy to artifact storage.
-- Save full release report to [webos_verification_report.md](file:///Users/aditya/.gemini/antigravity/brain/1ea5e927-9ef3-408d-8f80-8203f0208295/webos_verification_report.md).
+### Visual & Documentation Artifacts
+1. High-resolution screenshot showing Settings app open with the **Liquid Glass** slider visible alongside the Terminal running `theme list`.
+2. Detailed completion report saved to `webos_verification_report.md`.

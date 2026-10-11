@@ -1,36 +1,51 @@
-# Tasks: WebOS v5.1 - macOS System Settings Rebuild & Apple Window Motion
+# Tasks: WebOS v6.2 — Matios UI Integration, macOS 27 Liquid Glass & Shareable Themes
 
-- [x] 0. Architecture & Implementation Planning <!-- id: 550 -->
-  - [x] Write detailed implementation plan artifact (`implementation_plan.md`) <!-- id: 551 -->
-  - [x] Present plan to user and await explicit approval <!-- id: 552 -->
-- [x] 1. macOS System Settings App Rebuild <!-- id: 553 -->
-  - [x] Add missing Lucide SVG icons (`image`, `droplet`, `type`, `alignLeft`) <!-- id: 554 -->
-  - [x] Build two-pane layout: 200px sidebar + scrollable content pane <!-- id: 555 -->
-  - [x] Implement decorative search field in sidebar with magnifier icon <!-- id: 556 -->
-  - [x] Build 3 grouped sidebar sections (Appearance, Terminal, System) with 7 total rows <!-- id: 557 -->
-  - [x] Build dynamic Header Card (48px accent icon, 20px title, 12px subtitle) <!-- id: 558 -->
-  - [x] Build Content Cards with 28x28 colored icon tiles (Appearance, Terminal, System) <!-- id: 559 -->
-  - [x] Integrate controls: Segmented controls, 8 accent swatches, 6 wallpaper tiles, sliders with live labels, toggles <!-- id: 560 -->
-  - [x] Implement centered Reset Confirmation Modal (320px, 8px blur backdrop, Cancel / Reset) <!-- id: 561 -->
-  - [x] Add `termLineHeight` setting to `Settings` object and persist to `localStorage["webos.settings"]` <!-- id: 562 -->
-- [x] 2. Apple-Spec Window Motion Tuning <!-- id: 563 -->
-  - [x] Configure Apple timing curves: `cubic-bezier(0.32, 0.72, 0, 1)` for open/min/max and `cubic-bezier(0.4, 0, 1, 1)` for close <!-- id: 564 -->
-  - [x] Window open: 220ms, `scale(0.96) -> scale(1)`, `opacity 0 -> 1` <!-- id: 565 -->
-  - [x] Window close: 180ms, reverse <!-- id: 566 -->
-  - [x] Window minimize: 260ms, `scale(1) -> scale(0.15)` + translate toward taskbar <!-- id: 567 -->
-  - [x] Window restore from minimize: 240ms reverse <!-- id: 568 -->
-  - [x] Window maximize: 280ms left/top/width/height transition <!-- id: 569 -->
-  - [x] Window restore from maximize: 260ms reverse <!-- id: 570 -->
-  - [x] Focus transition: 200ms box-shadow, border-color, titlebar text opacity <!-- id: 571 -->
-  - [x] Drag override: `transition: none !important` for 1:1 cursor response <!-- id: 572 -->
-  - [x] Reduced motion support: `@media (prefers-reduced-motion)` and `[data-motion="reduced"]` opacity-only 100ms fade <!-- id: 573 -->
-- [x] 3. Taskbar Polish <!-- id: 574 -->
-  - [x] Button hover scale: `scale(1.0) -> scale(1.06)` over 140ms `ease-out` <!-- id: 575 -->
-  - [x] Active indicator dot: 160ms fade-in with 2px upward translate <!-- id: 576 -->
-- [x] 4. Verification, Testing & Deliverables <!-- id: 577 -->
-  - [x] Verify line budget constraint (under ~2,100 lines total in `index.html` — 2,081 lines) <!-- id: 578 -->
-  - [x] Extend test suite to `verify_v51.js` with comprehensive assertions <!-- id: 579 -->
-  - [x] Execute `verify_v51.js` in headless Chrome and confirm 0 exit code <!-- id: 580 -->
-  - [x] Conduct automated Zero-Emoji audit <!-- id: 581 -->
-  - [x] Capture composite screenshots (Dark Mode + Light Mode + Settings App + Terminal + Task Manager) <!-- id: 582 -->
-  - [x] Generate comprehensive `webos_verification_report.md` artifact <!-- id: 583 -->
+- [x] 0. Architecture & Implementation Planning <!-- id: 700 -->
+  - [x] Write detailed implementation plan (`implementation_plan.md`) <!-- id: 701 -->
+  - [x] Review and establish unified v6.1 + v6.2 architectural baseline <!-- id: 702 -->
+- [x] 1. CDN Integration & Theming Synchronization <!-- id: 703 -->
+  - [x] Add Matios UI CSS, violet accent CSS, and JS CDN links to `<head>` of `index.html` <!-- id: 704 -->
+  - [x] Implement `data-mts-mode` sync on `<html>` (`dark` / `light`) on boot and theme toggle <!-- id: 705 -->
+  - [x] Implement Matios accent stylesheet switcher and `data-mts-accent` attribute sync <!-- id: 706 -->
+  - [x] Ensure non-destructive CSS namespace encapsulation (no styling bleed onto desktop or window chrome) <!-- id: 707 -->
+- [x] 2. macOS 27 "Golden Gate" Liquid Glass Transparency Slider <!-- id: 708 -->
+  - [x] Add `--glass-opacity: 0.8` CSS variable to `:root` <!-- id: 709 -->
+  - [x] Apply dynamic glass opacity formula to taskbar background & titlebars <!-- id: 710 -->
+  - [x] Add "Liquid Glass" row in Settings under Appearance with droplet icon on blue tile <!-- id: 711 -->
+  - [x] Connect Matios slider (0.0 to 1.0) with live preview and value label <!-- id: 712 -->
+  - [x] Persist `glassOpacity` in `localStorage["webos.settings"]` with reset-to-default fallback <!-- id: 713 -->
+  - [x] Update `theme set glassOpacity <value>` and include in `theme export` JSON <!-- id: 714 -->
+- [x] 3. Shareable Theme File System <!-- id: 715 -->
+  - [x] Implement `theme save <name>` writing `/home/user/Documents/webos-theme-<name>.json` <!-- id: 716 -->
+  - [x] Implement `theme load <path>` reading JSON from VFS, validating schema, and applying settings <!-- id: 717 -->
+  - [x] Implement `theme list` enumerating `/home/user/Documents/webos-theme-*.json` files <!-- id: 718 -->
+  - [x] Ensure complete state export: `mode`, `accent`, `wallpaper`, `motion`, `glassOpacity`, terminal settings <!-- id: 719 -->
+- [x] 4. Core VFS Modernization & Shell Commands (v6.1 Foundation) <!-- id: 720 -->
+  - [x] Add `mtime` tracking and migration in `Kernel.fs.load()` <!-- id: 721 -->
+  - [x] Auto-create default directories: `/home/user/Desktop`, `/home/user/Documents`, `/home/user/Downloads` <!-- id: 722 -->
+  - [x] Implement `Kernel.fs.stat()`, `rename()`, `duplicate()`, and recursive `remove(path, cwd, true)` <!-- id: 723 -->
+  - [x] Implement CLI commands: `files [path]`, `stat <path>`, `rm -r / -rf <path>` <!-- id: 724 -->
+- [x] 5. Refactor Settings App with Matios UI Controls <!-- id: 725 -->
+  - [x] Replace Appearance mode toggle with Matios segmented button group (`.mts-btn-group`, `.mts-btn`) <!-- id: 726 -->
+  - [x] Replace Terminal sliders (font size, line height) with Matios sliders <!-- id: 727 -->
+  - [x] Replace Terminal "Show Path" toggle with Matios toggle component (`.mts-toggle-wrap`) <!-- id: 728 -->
+  - [x] Replace System Motion segmented control and Reset button with Matios UI buttons <!-- id: 729 -->
+  - [x] Retain macOS Sequoia two-pane layout, icon tiles, and window geometry <!-- id: 730 -->
+- [x] 6. File Manager App with Matios UI Integration <!-- id: 731 -->
+  - [x] Add desktop icon (`#icon-files`) and taskbar button (`#taskbar-btn-files`) with active dot <!-- id: 732 -->
+  - [x] Build 38px Finder toolbar with Matios view toggle buttons and Matios search input <!-- id: 733 -->
+  - [x] Build 180px translucent sidebar with FAVORITES and LOCATIONS navigation <!-- id: 734 -->
+  - [x] Implement Grid (Icon) view and List view with `mtime` and human-readable sizes <!-- id: 735 -->
+  - [x] Implement Matios Context Menu component on files, folders, and empty canvas <!-- id: 736 -->
+  - [x] Implement Matios Modal dialog for recursive folder delete confirmation <!-- id: 737 -->
+  - [x] Implement inline renaming, folder duplicate, clipboard copy path, and toasts <!-- id: 738 -->
+- [x] 7. Automated Verification & Artifacts <!-- id: 739 -->
+  - [x] Write `verify_v62.js` headless CDP test suite <!-- id: 740 -->
+  - [x] Execute zero-emoji audit across rendered DOM <!-- id: 741 -->
+  - [x] Verify `window.MTS` availability and component rendering <!-- id: 742 -->
+  - [x] Verify Liquid Glass slider live DOM updates and persistence across reload <!-- id: 743 -->
+  - [x] Verify `theme save`, `theme load`, and `theme list` CLI pipeline <!-- id: 744 -->
+  - [x] Verify File Manager operations (create, rename, duplicate, delete modal, navigation) <!-- id: 745 -->
+  - [x] Verify scheduler 100ms quantum and shell piping regressions <!-- id: 746 -->
+  - [x] Capture showcase screenshots (Settings Liquid Glass slider + Terminal `theme list`) <!-- id: 747 -->
+  - [x] Generate `webos_verification_report.md` artifact <!-- id: 748 -->
